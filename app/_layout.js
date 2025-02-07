@@ -1,13 +1,12 @@
-import { SplashScreen, Stack, useSegments } from "expo-router";
 import "../global.css";
+import { SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
-import { UserProvider } from "../context/UserContext";
+import { AuthProvider } from "../context/AuthContext";
+
 SplashScreen.preventAutoHideAsync();
 
 const RootLayout = () => {
-  const segments = useSegments();
-
   const [fontsLoaded, error] = useFonts({
     "Poppins-Black": require("../assets/fonts/Poppins-Black.ttf"),
     "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
@@ -27,23 +26,17 @@ const RootLayout = () => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
-    const checkRoute = async () => {
-      const currentRoute = `/${segments.join("/")}`;
-      await middleware(currentRoute);
-    };
-
-    checkRoute();
-  }, [fontsLoaded, error, segments]);
+  }, [fontsLoaded, error]);
 
   if (!fontsLoaded && !error) {
     return null;
   }
 
   return (
-    <UserProvider>
+    <AuthProvider>
       <Stack>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen
           name="detailCategory/[categoryId]"
           options={{ title: "List course" }}
@@ -55,7 +48,7 @@ const RootLayout = () => {
           }}
         />
       </Stack>
-    </UserProvider>
+    </AuthProvider>
   );
 };
 

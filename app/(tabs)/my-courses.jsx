@@ -1,10 +1,10 @@
-import { View, Text } from "react-native";
+import { View, Text, Button } from "react-native";
 import React from "react";
 
 export default function MyCourses() {
   return (
-    <View>
-      <Text>MyCourses</Text>
+    <View className="h-full justify-center items-center">
+      <Text>My courses</Text>
     </View>
   );
 }

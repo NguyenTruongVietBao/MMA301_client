@@ -1,7 +1,7 @@
-import { Stack, Tabs } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { Stack } from "expo-router";
+import React from "react";
 
-const AuthLayout = () => {
+export default function AuthLayout() {
   return (
     <Stack>
       <Stack.Screen
@@ -14,6 +14,4 @@ const AuthLayout = () => {
       />
     </Stack>
   );
-};
-
-export default AuthLayout;
+}

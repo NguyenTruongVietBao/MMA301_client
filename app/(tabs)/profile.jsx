@@ -1,30 +1,29 @@
-import React, { useContext, useEffect } from "react";
+import React from "react";
 import { View, Text, Button } from "react-native";
-import { router } from "expo-router";
-import { UserContext } from "../../context/UserContext";
+import { Link, router } from "expo-router";
+import { useAuthContext } from "../../context/AuthContext";
 
 export default function Profile() {
-  const { user, clearUser } = useContext(UserContext); // Access user and clearUser from context
-
-  useEffect(() => {
-    if (!user) {
-      // Redirect to login if not logged in
-      router.push("/login");
-    }
-  }, [user]);
-
+  const { onLogout, authState } = useAuthContext();
+  const user = authState.user;
   const handleLogout = async () => {
-    await clearUser(); // Clear user data and log out
-    router.push("/login"); // Redirect to login page
+    await onLogout();
+    router.replace("/login");
   };
-
-  if (!user) return null; // Avoid rendering until redirect
 
   return (
     <View className="h-full justify-center items-center">
-      <Text className="text-2xl">Welcome, {user.name}!</Text>
-      <Text className="text-lg">Email: {user.email}</Text>
-      <Button title="Logout" onPress={handleLogout} />
+      {authState.authenticated === true ? (
+        <>
+          <Text>{JSON.stringify(user, null, 2)}</Text>
+          <Button title="Logout" onPress={handleLogout} />
+        </>
+      ) : (
+        <>
+          <Text>You are not logged in.</Text>
+          <Link href={"/login"}>Login</Link>
+        </>
+      )}
     </View>
   );
 }

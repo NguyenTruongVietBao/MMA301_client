@@ -8,6 +8,7 @@ export const FormField = ({
   handleChangeText,
   otherStyles,
   placeholder,
+  keyboardType,
   ...props
 }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +32,7 @@ export const FormField = ({
           placeholder={placeholder}
           placeholderTextColor={"#cecece"}
           onChangeText={handleChangeText}
+          keyboardType={keyboardType}
           secureTextEntry={title === "Password" && !showPassword}
           {...props}
         />

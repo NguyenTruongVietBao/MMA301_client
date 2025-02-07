@@ -6,18 +6,20 @@ import {
   Button,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
+  StyleSheet, ActivityIndicator,
 } from "react-native";
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import { useLocalSearchParams } from "expo-router";
 import sampleDataCourse from "../../constants/courses"; // Assuming course data exists here
 import { Dropdown } from "react-native-element-dropdown";
 import { AntDesign } from "@expo/vector-icons";
+import axiosInstance from "../../utils/axiosInstance";
 
 const CourseDetailScreen = () => {
   const { courseId } = useLocalSearchParams();
-  const [selectedChapter, setSelectedChapter] = useState(null);
-  const [selectedLesson, setSelectedLesson] = useState(null);
+  const [value, setValue] = useState(null);
+  const [course, setCourse] = useState(null); // Store course data
+  const [isLoading, setIsLoading] = useState(true); // Loading state
   const data = [
     { label: "Item 1", value: "1" },
     { label: "Item 2", value: "2" },
@@ -28,31 +30,42 @@ const CourseDetailScreen = () => {
     { label: "Item 7", value: "7" },
     { label: "Item 8", value: "8" },
   ];
-  const [value, setValue] = useState(null);
-  const course = sampleDataCourse.courses.find((c) => c.id === courseId);
+  const fetchCourseDetails = async () => {
+    try {
+      const response = await axiosInstance.get(`/courses/${courseId}`);
+      setCourse(response.data); // Assuming response.data contains course details
+    } catch (err) {
 
-  if (!course) {
+      console.error("Error fetching course details:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  useEffect(() => {
+    if (courseId) fetchCourseDetails();
+  }, [courseId]);
+
+  if (isLoading) {
     return (
-      <View>
-        <Text className="text-xl font-psemibold text-red-600">
-          Course not found
-        </Text>
-      </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4B6EF5" />
+          <Text>Loading course details...</Text>
+        </View>
     );
   }
-  const handleChapterSelect = (chapter) => {
-    setSelectedChapter(chapter);
-    setSelectedLesson(null); // Reset selected lesson when a new chapter is selected
-  };
   return (
     <View className="h-screen flex-1 bg-slate-100">
       <ScrollView>
         <View className="h-screen w-full flex justify-start items-center">
           {/* Image Section */}
           <Image
-            source={course.imageUrl}
-            style={{ width: "100%", height: "360" }} // Adjust dimensions as needed
-            resizeMode="contain"
+              source={
+                course.thumbnailUrl
+                    ? { uri: course.thumbnailUrl }
+                    : require("../../assets/images/logo-music-1.png") // Fallback image
+              }
+              style={{ width: "100%", height: 360 }}
+              resizeMode="contain"
           />
 
           {/* Content Section */}
@@ -127,7 +140,7 @@ const CourseDetailScreen = () => {
               onPress={() => {}}
             >
               <Text className="text-white text-center font-bold text-lg">
-                Add to cart
+                Buy now
               </Text>
             </TouchableOpacity>
           </View>
@@ -146,6 +159,11 @@ const styles = StyleSheet.create({
     height: 50,
     borderBottomColor: "gray",
     borderBottomWidth: 0.5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   icon: {
     marginRight: 5,

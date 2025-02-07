@@ -1,29 +1,53 @@
 import { View, Text, ScrollView, ImageBackground, Alert } from "react-native";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FormField } from "../../components/FormField";
 import { Link, router } from "expo-router";
 import CustomButton from "../../components/CustomButton";
-import { UserContext } from "../../context/UserContext";
+import { useAuthContext } from "../../context/AuthContext";
 
-export default function Login() {
-  const { user } = useContext(UserContext); // Access the user from context
+export default function Register() {
+  const { onRegister } = useAuthContext();
   const [form, setForm] = useState({
     email: "",
     password: "",
-    fullName: "",
+    username: "",
     phone: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      router.push("/");
+  const handleRegister = async () => {
+    if (!form.email || !form.password || !form.username || !form.phone) {
+      Alert.alert(
+        "Error",
+        "All fields are required. Please fill out the form completely."
+      );
+      return;
     }
-  }, [user]);
 
-  const handleLogin = () => {
-    // TODO: Send login request to the server
-    Alert.alert("Data: ", form.email + form.password);
+    // Ensure the email format is valid
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      Alert.alert("Error", "Please enter a valid email address.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await onRegister(
+        form.username,
+        form.email,
+        form.password,
+        form.phone
+      );
+      if (res) {
+        Alert.alert("Register success");
+        router.push("/login");
+      }
+    } catch (error) {
+      Alert.alert("Login failed. Please check your credentials.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -41,14 +65,15 @@ export default function Login() {
               Register account
             </Text>
             <FormField
-              title={"Fullname"}
-              value={form.fullName}
-              placeholder={"Nguyen Van A"}
+              title={"Username"}
+              value={form.username}
+              placeholder={"Viet Bao"}
               otherStyles="mt-6"
+              keyboardType={"default"}
               handleChangeText={(e) =>
                 setForm({
                   ...form,
-                  fullName: e,
+                  username: e,
                 })
               }
             />
@@ -58,7 +83,7 @@ export default function Login() {
               value={form.email}
               otherStyles="mt-6"
               placeholder={"example@gmail.com"}
-              keyboardType="email-address"
+              keyboardType={"email-address"}
               handleChangeText={(e) =>
                 setForm({
                   ...form,
@@ -71,6 +96,7 @@ export default function Login() {
               value={form.phone}
               placeholder={"0987654321"}
               otherStyles="mt-6"
+              keyboardType={"phone-pad"}
               handleChangeText={(e) =>
                 setForm({
                   ...form,
@@ -83,6 +109,7 @@ export default function Login() {
               value={form.password}
               placeholder={"********"}
               otherStyles="mt-6"
+              keyboardType={"default"}
               handleChangeText={(e) =>
                 setForm({
                   ...form,
@@ -92,7 +119,7 @@ export default function Login() {
             />
             <CustomButton
               title={"Create"}
-              handlePress={handleLogin}
+              handlePress={handleRegister}
               containerStyles={"mt-7"}
               isLoading={isSubmitting}
               textStyles={"text-xl"}

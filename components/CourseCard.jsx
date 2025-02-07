@@ -2,14 +2,18 @@ import { View, Text, Image } from "react-native";
 import React from "react";
 import { Link } from "expo-router";
 
-const CourseCard = ({ id, title, description, price, imageUrl }) => {
+const CourseCard = ({ _id, title, price, category, description, thumbnailUrl }) => {
   return (
-    <Link href={`/detailCourse/${id}`}>
-      <View className="w-[180px] h-[270px] bg-white rounded-3xl">
+    <Link href={`/detailCourse/${_id}`}>
+      <View className="w-[180px] h-[250px] gap-5 bg-white rounded-3xl">
         <Image
-          className="mx-auto h-[160px] w-[80%]"
-          source={imageUrl}
-          resizeMode="contain"
+            source={
+              thumbnailUrl
+                  ? { uri: thumbnailUrl } // Remote image
+                  : require("../assets/images/logo-music-1.png") // Fallback image
+            }
+            className="mx-auto h-[120px] w-[80%]"
+            resizeMode="contain"
         />
         <View className="w-full ml-4">
           <View className="py-1">

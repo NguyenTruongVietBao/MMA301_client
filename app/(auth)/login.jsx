@@ -1,38 +1,27 @@
 import { View, Text, ScrollView, ImageBackground, Alert } from "react-native";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FormField } from "../../components/FormField";
 import { Link, router } from "expo-router";
 import CustomButton from "../../components/CustomButton";
-import { UserContext } from "../../context/UserContext";
+import { useAuthContext } from "../../context/AuthContext";
 
 export default function Login() {
-  const { user, setUser } = useContext(UserContext);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { onLogin } = useAuthContext();
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      router.push("/");
-    }
-  }, [user]);
 
   const handleLogin = async () => {
     setIsSubmitting(true);
     try {
-      const userData = {
-        id: 1,
-        email: form.email,
-        name: "John Doe",
-      };
-
-      await setUser(userData);
-
-      router.push("/", { relativeToDirectory: true });
+      const res = await onLogin(form.email, form.password);
+      if (res) {
+        router.replace("/");
+      }
     } catch (error) {
-      Alert.alert("Error", "Failed to log in. Please try again.");
+      Alert.alert("Login failed. Please check your credentials.");
     } finally {
       setIsSubmitting(false);
     }
