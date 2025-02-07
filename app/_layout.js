@@ -45,6 +45,7 @@ const RootLayout = () => {
           name="detailCourse/[courseId]"
           options={{
             headerBackButtonDisplayMode: false,
+            title: "Detail course",
           }}
         />
       </Stack>

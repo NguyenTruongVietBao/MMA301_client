@@ -17,17 +17,14 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       try {
         const userData = await AsyncStorage.getItem("user");
-
         if (userData) {
           setAuthState({
             user: JSON.parse(userData),
             authenticated: true,
           });
         }
-        console.log("User data:", authState.user);
-        console.log("authenticated", authState.authenticated);
-      } catch {
-        console.log("User not logged in");
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu người dùng:", error);
       }
     };
     loadUser();
@@ -60,19 +57,17 @@ export const AuthProvider = ({ children }) => {
         return res.data;
       }
     } catch (error) {
-      console.error(error);
+      console.error("Lỗi đăng nhập:", error.response?.data || error.message);
     }
   };
 
   const logout = async () => {
     await AsyncStorage.removeItem("user");
-
     setAuthState((prevState) => ({
       ...prevState,
       user: null,
       authenticated: false,
     }));
-
     console.log(
       " -------------------------- Logged out -------------------------- "
     );

@@ -14,14 +14,25 @@ export default function Login() {
   });
 
   const handleLogin = async () => {
+    if (!onLogin) {
+      console.error("⚠️ onLogin function is not available");
+      Alert.alert("Login function is not available.");
+      return;
+    }
     setIsSubmitting(true);
     try {
+      if (!form.email || !form.password) {
+        Alert.alert("Please fill in all fields");
+        return;
+      }
       const res = await onLogin(form.email, form.password);
-      if (res) {
+      if (res?.access_token) {
         router.replace("/");
+      } else {
+        Alert.alert("Invalid credentials");
       }
     } catch (error) {
-      Alert.alert("Login failed. Please check your credentials.");
+      Alert.alert("Something went wrong");
     } finally {
       setIsSubmitting(false);
     }

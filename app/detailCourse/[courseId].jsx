@@ -6,9 +6,10 @@ import {
   Button,
   FlatList,
   TouchableOpacity,
-  StyleSheet, ActivityIndicator,
+  StyleSheet,
+  ActivityIndicator,
 } from "react-native";
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import sampleDataCourse from "../../constants/courses"; // Assuming course data exists here
 import { Dropdown } from "react-native-element-dropdown";
@@ -20,22 +21,11 @@ const CourseDetailScreen = () => {
   const [value, setValue] = useState(null);
   const [course, setCourse] = useState(null); // Store course data
   const [isLoading, setIsLoading] = useState(true); // Loading state
-  const data = [
-    { label: "Item 1", value: "1" },
-    { label: "Item 2", value: "2" },
-    { label: "Item 3", value: "3" },
-    { label: "Item 4", value: "4" },
-    { label: "Item 5", value: "5" },
-    { label: "Item 6", value: "6" },
-    { label: "Item 7", value: "7" },
-    { label: "Item 8", value: "8" },
-  ];
   const fetchCourseDetails = async () => {
     try {
       const response = await axiosInstance.get(`/courses/${courseId}`);
       setCourse(response.data); // Assuming response.data contains course details
     } catch (err) {
-
       console.error("Error fetching course details:", err);
     } finally {
       setIsLoading(false);
@@ -47,10 +37,10 @@ const CourseDetailScreen = () => {
 
   if (isLoading) {
     return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4B6EF5" />
-          <Text>Loading course details...</Text>
-        </View>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4B6EF5" />
+        <Text>Loading course details...</Text>
+      </View>
     );
   }
   return (
@@ -59,13 +49,13 @@ const CourseDetailScreen = () => {
         <View className="h-screen w-full flex justify-start items-center">
           {/* Image Section */}
           <Image
-              source={
-                course.thumbnailUrl
-                    ? { uri: course.thumbnailUrl }
-                    : require("../../assets/images/logo-music-1.png") // Fallback image
-              }
-              style={{ width: "100%", height: 360 }}
-              resizeMode="contain"
+            source={
+              course.thumbnailUrl
+                ? { uri: course.thumbnailUrl }
+                : require("../../assets/images/logo-music-1.png") // Fallback image
+            }
+            style={{ width: "100%", height: 360 }}
+            resizeMode="contain"
           />
 
           {/* Content Section */}
@@ -79,7 +69,7 @@ const CourseDetailScreen = () => {
             </Text>
             {/* Description and Price */}
 
-            <View className="flex-row justify-between items-center w-full gap-2">
+            <View className="flex-row justify-between w-full gap-2">
               <View className="w-2/3">
                 <Text className="text-lg font-pbold">About the course </Text>
                 <Text className="font-pmedium">
@@ -96,45 +86,17 @@ const CourseDetailScreen = () => {
               </View>
             </View>
           </View>
-
-          {/* Dropdown */}
-          <Dropdown
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={data}
-            search
-            maxHeight={300}
-            labelField="label"
-            valueField="value"
-            placeholder="Select item"
-            searchPlaceholder="Search..."
-            value={value}
-            onChange={(item) => {
-              setValue(item.value);
-            }}
-            renderLeftIcon={() => (
-              <AntDesign
-                style={styles.icon}
-                color="black"
-                name="Safety"
-                size={20}
-              />
-            )}
-          />
         </View>
       </ScrollView>
       {/* Footer */}
       <View className="absolute bottom-0 w-full bg-white border-t border-gray-200 py-4 px-6">
         <View className="flex flex-row items-center justify-between">
-          <View className="w-2/5 flex items-center">
+          <View className="w-1/5 flex items-center">
             <TouchableOpacity onPress={() => {}}>
               <AntDesign name="hearto" size={24} color="#4B6EF5" />
             </TouchableOpacity>
           </View>
-          <View className="w-3/5">
+          <View className="ml-2 w-4/5">
             <TouchableOpacity
               className="bg-[#4B6EF5] py-4 rounded-full"
               onPress={() => {}}
