@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
-import sampleDataCourse from "../../constants/courses"; // Assuming course data exists here
+ // Assuming course data exists here
 import { Dropdown } from "react-native-element-dropdown";
 import { AntDesign } from "@expo/vector-icons";
 import axiosInstance from "../../utils/axiosInstance";
