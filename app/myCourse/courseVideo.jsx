@@ -1,180 +1,247 @@
-import React, { useState, useCallback, useRef } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
-import { Video } from 'expo-av';
+import React, { useState, useCallback, useEffect } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { WebView } from 'react-native-webview';
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useMyCourseContext } from "../../context/MyCourseContext";
 import { useAuthContext } from "../../context/AuthContext";
+import { Linking } from "react-native";
 
-const VideoPlayer = React.memo(({ url, onError }) => {
-  const videoRef = useRef(null);
+const VideoPlayer = React.memo(({ videoUrl }) => {
+  const [isLoading, setIsLoading] = useState(true);
 
-  const getProcessedUrl = (url) => {
-    try {
-      if (!url) return '';
-      
-      const cleanUrl = url.trim();
-      
-      // Xử lý URL Firebase Storage
-      if (cleanUrl.includes('firebase')) {
-        // Nếu URL đã có alt=media, trả về nguyên bản
-        if (cleanUrl.includes('alt=media')) {
-          return cleanUrl;
-        }
-        // Nếu chưa có alt=media, thêm vào
-        return cleanUrl + (cleanUrl.includes('?') ? '&' : '?') + 'alt=media';
-      }
-      return cleanUrl;
-    } catch (error) {
-      console.error("Lỗi xử lý URL:", error);
-      onError && onError(new Error("Lỗi xử lý URL video"));
-      return '';
-    }
-  };
-
-  const processedUrl = getProcessedUrl(url);
-  
-  if (!processedUrl) {
-    onError && onError(new Error("URL video không hợp lệ"));
+  if (!videoUrl) {
     return null;
   }
 
+  const encodedVideoUrl = encodeURI(videoUrl);
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          * { margin: 0; padding: 0; }
+          html, body { width: 100%; height: 100%; background: black; }
+          video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+          }
+        </style>
+      </head>
+      <body>
+        <video controls playsinline webkit-playsinline>
+          <source src="${encodedVideoUrl}" type="video/mp4">
+        </video>
+      </body>
+    </html>
+  `;
+
   return (
-    <Video
-      ref={videoRef}
-      source={{ uri: processedUrl }}
-      useNativeControls
-      resizeMode="contain"
-      style={{ width: '100%', height: 300 }}
-      shouldPlay={false}
-      isMuted={false}
-      onError={(error) => {
-        console.error("Video error:", error);
-        onError && onError(error);
-      }}
-    />
+    <View style={{ width: '100%', height: 300, backgroundColor: 'black' }}>
+      {isLoading && (
+        <ActivityIndicator 
+          size="large" 
+          color="#fff" 
+          style={{ position: 'absolute', top: '50%', left: '50%' }} 
+        />
+      )}
+      <WebView
+        source={{ html: htmlContent }}
+        style={{ backgroundColor: 'black' }}
+        allowsFullscreenVideo
+        mediaPlaybackRequiresUserAction={false}
+        onLoadEnd={() => setIsLoading(false)}
+      />
+    </View>
   );
 });
 
 const CourseVideo = () => {
   const params = useLocalSearchParams();
-  const { lessonId, title, description, videoUrl } = params;
-  const { updateLessonProgress } = useMyCourseContext();
+  const { 
+    lessonId, 
+    title, 
+    description, 
+    videoUrl, 
+    createdAt, 
+    updatedAt, 
+    author 
+  } = params;
+  const { updateLessonProgress, getCompletedLessons } = useMyCourseContext();
+  const { authState } = useAuthContext();
+  const router = useRouter();
   
   const [isCompleted, setIsCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [videoError, setVideoError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  
-  const handleVideoError = useCallback((error) => {
-    console.error('Lỗi video:', error);
-    if (retryCount < 2) {
-      setRetryCount(prev => prev + 1);
-      setVideoError(false); // Reset error để thử lại
-    } else {
-      setVideoError(true);
-      Alert.alert(
-        "Lỗi phát video",
-        "Không thể phát video. Vui lòng kiểm tra kết nối mạng và thử lại sau."
-      );
-    }
-  }, [retryCount]);
+  const [isChecking, setIsChecking] = useState(true);
+  const [completedLessons, setCompletedLessons] = useState([]);
 
+  // Tạo object lesson từ params để giống với myCourseDetail
+  const currentLesson = {
+    _id: lessonId,
+    title: title,
+    videoUrl: videoUrl,
+    createdAt: createdAt,
+    updatedAt: updatedAt
+  };
+  
+  // Kiểm tra lesson đã hoàn thành
+  useEffect(() => {
+    const checkCompletion = async () => {
+      try {
+        const completed = await getCompletedLessons();
+        console.log("Completed lessons:", completed);
+        console.log("Current lesson ID:", lessonId);
+        
+        // Lưu danh sách lessons đã hoàn thành
+        setCompletedLessons(completed);
+        
+        // Kiểm tra lesson hiện tại có trong danh sách hoàn thành không
+        const isLessonCompleted = completed.includes(lessonId);
+        console.log("Is lesson completed:", isLessonCompleted);
+        
+        setIsCompleted(isLessonCompleted);
+      } catch (error) {
+        console.error("Lỗi kiểm tra hoàn thành:", error);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    if (lessonId) {
+      checkCompletion();
+    }
+  }, [lessonId]);
+
+  // Xử lý hoàn thành bài học
   const handleComplete = useCallback(async () => {
-    if (isLoading) return;
+    if (isLoading || isCompleted) return;
+    
+    // Kiểm tra lại một lần nữa trước khi cập nhật
+    if (completedLessons.includes(lessonId)) {
+      Alert.alert("Thông báo", "Bài học này đã được hoàn thành!");
+      setIsCompleted(true);
+      return;
+    }
     
     setIsLoading(true);
     try {
-      const newStatus = !isCompleted;
-      await updateLessonProgress(lessonId, newStatus);
-      setIsCompleted(newStatus);
-      Alert.alert(
-        "Thành công", 
-        newStatus ? "Đã đánh dấu hoàn thành" : "Đã hủy đánh dấu hoàn thành"
-      );
+      const result = await updateLessonProgress(lessonId);
+      if (result.success) {
+        // Cập nhật danh sách lessons đã hoàn thành
+        setCompletedLessons(prev => [...prev, lessonId]);
+        setIsCompleted(true);
+        Alert.alert("Thành công", result.message || "Đã hoàn thành bài học");
+      }
     } catch (error) {
-      Alert.alert("Lỗi", "Không thể cập nhật tiến độ. Vui lòng thử lại sau.");
+      console.error("Lỗi cập nhật:", error);
+      Alert.alert("Lỗi", error.message || "Không thể cập nhật tiến độ. Vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, isCompleted, lessonId]);
+  }, [isLoading, isCompleted, lessonId, completedLessons]);
 
-  const handleRetry = useCallback(() => {
-    setVideoError(false);
-    setRetryCount(0);
-  }, []);
+  // Format date
+  const formatDate = (dateString) => {
+    try {
+      if (!dateString) return "No data";
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "No data";
+      return date.toLocaleDateString('en-US', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      return "No data";
+    }
+  };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
-      <View className="p-4">
-        <Text className="text-3xl font-bold text-gray-800 mb-2">{title}</Text>
-        <Text className="text-gray-600 text-base mb-6">{description}</Text>
-      </View>
+    <>
+      <Stack.Screen 
+        options={{
+          headerTitle: title || "Lesson",
+          headerTitleStyle: { fontSize: 18 },
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: 'white' },
+        }} 
+      />
 
-      <View className="w-full aspect-video bg-black">
-        {videoUrl && !videoError ? (
-          <VideoPlayer 
-            url={videoUrl} 
-            onError={handleVideoError}
-          />
-        ) : (
-          <View className="flex-1 justify-center items-center">
-            <Text className="text-white mb-4">
-              {!videoUrl 
-                ? "Không có video" 
-                : "Không thể tải video. Vui lòng thử lại."}
-            </Text>
-            {videoError && (
-              <TouchableOpacity 
-                onPress={handleRetry}
-                className="bg-blue-500 px-4 py-2 rounded-lg"
-              >
-                <Text className="text-white">Thử lại</Text>
-              </TouchableOpacity>
+      <ScrollView className="flex-1 bg-white">
+        <View className="bg-black">
+          <VideoPlayer videoUrl={videoUrl} />
+        </View>
+
+        <View className="p-5">
+          {/* Complete Button */}
+          <TouchableOpacity
+            onPress={handleComplete}
+            disabled={isLoading || isCompleted || isChecking}
+            className={`p-4 rounded-xl flex-row items-center justify-center ${
+              isCompleted ? "bg-[#4ade80]" : "bg-[#3b82f6]"
+            }`}
+          >
+            {isChecking ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <>
+                <Ionicons
+                  name={isCompleted ? "checkmark-circle" : "bookmark-outline"}
+                  size={24}
+                  color="white"
+                />
+                <Text className="text-white font-semibold text-lg ml-2">
+                  {isLoading 
+                    ? "Processing..." 
+                    : isCompleted 
+                      ? "Completed" 
+                      : "Mark as Complete"}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* Lesson Info */}
+          <View className="mt-6 p-4 bg-gray-50 rounded-xl">
+            <View className="flex-row items-center mb-2">
+              <Ionicons name="time-outline" size={20} color="#6b7280" />
+              <Text className="text-gray-600 ml-2">
+                Created: {formatDate(createdAt)}
+              </Text>
+            </View>
+            
+            <View className="flex-row items-center mb-2">
+              <Ionicons name="refresh-outline" size={20} color="#6b7280" />
+              <Text className="text-gray-600 ml-2">
+                Updated: {formatDate(updatedAt)}
+              </Text>
+            </View>
+
+            {author && (
+              <View className="flex-row items-center">
+                <Ionicons name="person-outline" size={20} color="#6b7280" />
+                <Text className="text-gray-600 ml-2">
+                  Author: {author || "Not updated"}
+                </Text>
+              </View>
             )}
           </View>
-        )}
-      </View>
 
-      <View className="px-4 pb-8 mt-6">
-        <TouchableOpacity
-          onPress={handleComplete}
-          disabled={isLoading || videoError}
-          className={`flex-row items-center justify-center p-4 rounded-xl shadow-sm ${
-            isCompleted ? "bg-green-600" : "bg-blue-600"
-          } ${(isLoading || videoError) ? "opacity-50" : ""}`}
-        >
-          <Ionicons
-            name={isCompleted ? "checkmark-circle" : "radio-button-off"}
-            size={24}
-            color="white"
-          />
-          <Text className="text-white font-bold ml-2 text-lg">
-            {isLoading 
-              ? "Đang xử lý..." 
-              : isCompleted 
-                ? "Đã hoàn thành" 
-                : "Đánh dấu hoàn thành"}
-          </Text>
-        </TouchableOpacity>
-
-        <View className="mt-8 bg-white p-6 rounded-xl shadow-sm">
-          <Text className="text-xl font-bold mb-4 text-gray-800">Ghi chú:</Text>
-          <View className="space-y-2">
-            <Text className="text-gray-600 text-base leading-relaxed">
-              • Xem hết video để nắm rõ nội dung bài học
-            </Text>
-            <Text className="text-gray-600 text-base leading-relaxed">
-              • Hoàn thành bài tập được giao (nếu có)
-            </Text>
-            <Text className="text-gray-600 text-base leading-relaxed">
-              • Đánh dấu hoàn thành khi đã nắm vững kiến thức
-            </Text>
+          {/* Notes */}
+          <View className="mt-6">
+            <Text className="text-gray-800 font-semibold mb-3">Notes:</Text>
+            <Text className="text-gray-600 mb-2">• Watch the entire video to understand the lesson content</Text>
+            <Text className="text-gray-600 mb-2">• Complete assigned exercises (if any)</Text>
+            <Text className="text-gray-600">• Mark as complete when you've mastered the material</Text>
           </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 };
 
-export default React.memo(CourseVideo);
+export default CourseVideo;

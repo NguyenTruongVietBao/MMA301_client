@@ -52,9 +52,14 @@ export const AuthProvider = ({ children }) => {
         password,
       });
       if (res.data) {
-        await AsyncStorage.setItem("user", JSON.stringify(res.data));
-        setAuthState({ user: res.data, authenticated: true });
-        return res.data;
+        const userData = {
+          ...res.data,
+          access_token: res.data.access_token,
+          refresh_token: res.data.refresh_token
+        };
+        await AsyncStorage.setItem("user", JSON.stringify(userData));
+        setAuthState({ user: userData, authenticated: true });
+        return userData;
       }
     } catch (error) {
       console.error("Lỗi đăng nhập:", error.response?.data || error.message);
