@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert, Linking } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert, Linking, ActivityIndicator } from "react-native";
 import React, { useState, useEffect, useCallback, memo } from "react";
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -117,16 +117,24 @@ const CourseDetail = () => {
   const [expandedChapter, setExpandedChapter] = useState(null);
   const { currentCourse, fetchCourseDetail, getCompletedLessons } = useMyCourseContext();
   const [completedLessons, setCompletedLessons] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     let mounted = true;
     
     const initializeData = async () => {
       if (courseId) {
-        await fetchCourseDetail(courseId);
-        const completed = await getCompletedLessons();
-        if (mounted) {
-          setCompletedLessons(completed);
+        setIsLoading(true);
+        try {
+          await fetchCourseDetail(courseId);
+          const completed = await getCompletedLessons();
+          if (mounted) {
+            setCompletedLessons(completed);
+          }
+        } catch (error) {
+          console.error("Error loading course details:", error);
+        } finally {
+          if (mounted) setIsLoading(false);
         }
       }
     };
@@ -161,6 +169,15 @@ const CourseDetail = () => {
       minute: '2-digit'
     });
   };
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-gray-50 justify-center items-center">
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text className="text-gray-600 mt-4">Loading course details...</Text>
+      </View>
+    );
+  }
 
   if (!currentCourse) {
     return (

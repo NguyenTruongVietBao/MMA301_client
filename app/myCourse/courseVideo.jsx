@@ -1,60 +1,186 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
-import { WebView } from 'react-native-webview';
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Dimensions, BackHandler } from "react-native";
+import { Video, AVPlaybackStatus } from 'expo-av';
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useMyCourseContext } from "../../context/MyCourseContext";
 import { useAuthContext } from "../../context/AuthContext";
-import { Linking } from "react-native";
+import * as ScreenOrientation from 'expo-screen-orientation';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from 'axios';
+import axiosInstance from "../../utils/axiosInstance";
+import { WebView } from 'react-native-webview';
+import { Audio } from 'expo-av';
 
 const VideoPlayer = React.memo(({ videoUrl }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
+  const [orientation, setOrientation] = useState(1); // 1 for portrait, 2 for landscape
+  const video = useRef(null);
+  const screenWidth = Dimensions.get('window').width;
+  const screenHeight = Dimensions.get('window').height;
+  const videoHeight = orientation === 1 ? screenWidth * (9/16) : screenHeight;
+  const videoWidth = orientation === 1 ? screenWidth : screenWidth;
 
-  if (!videoUrl) {
-    return null;
-  }
+  // Cấu hình âm thanh khi component mount
+  useEffect(() => {
+    const setupAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false
+        });
+        console.log("Audio mode set successfully");
+      } catch (error) {
+        console.error("Error setting audio mode:", error);
+      }
+    };
 
-  const encodedVideoUrl = encodeURI(videoUrl);
+    setupAudio();
+  }, []);
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          * { margin: 0; padding: 0; }
-          html, body { width: 100%; height: 100%; background: black; }
-          video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-          }
-        </style>
-      </head>
-      <body>
-        <video controls playsinline webkit-playsinline>
-          <source src="${encodedVideoUrl}" type="video/mp4">
-        </video>
-      </body>
-    </html>
-  `;
+  // Xử lý xoay màn hình
+  useEffect(() => {
+    const subscription = ScreenOrientation.addOrientationChangeListener((event) => {
+      setOrientation(event.orientationInfo.orientation);
+    });
+
+    return () => {
+      subscription.remove();
+      // Reset về portrait khi unmount
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+    };
+  }, []);
+
+  // Cho phép xoay màn hình tự do
+  useEffect(() => {
+    ScreenOrientation.unlockAsync();
+  }, []);
+
+  const processVideoUrl = (url) => {
+    try {
+      return url.replace(/\/videos\//g, '/videos%2F');
+    } catch (error) {
+      console.error("Error processing URL:", error);
+      return url;
+    }
+  };
+
+  const onPlaybackStatusUpdate = async (status) => {
+    if (status.isLoaded) {
+      if (isLoading) {
+        setIsLoading(false);
+      }
+      
+      // Theo dõi trạng thái buffering
+      setIsBuffering(status.isBuffering);
+      
+      if (status.didJustFinish) {
+        setIsFinished(true);
+      }
+    }
+  };
+
+  // Hàm xử lý xem lại video
+  const handleReplay = async () => {
+    if (video.current) {
+      setIsFinished(false);
+      await video.current.replayAsync();
+    }
+  };
+
+  const finalVideoUrl = processVideoUrl(videoUrl);
+  console.log("Final video URL:", finalVideoUrl);
 
   return (
-    <View style={{ width: '100%', height: 300, backgroundColor: 'black' }}>
-      {isLoading && (
-        <ActivityIndicator 
-          size="large" 
-          color="#fff" 
-          style={{ position: 'absolute', top: '50%', left: '50%' }} 
-        />
+    <View style={{ 
+      width: videoWidth, 
+      height: videoHeight,
+      backgroundColor: 'black',
+      position: 'relative',
+      justifyContent: 'center',
+      alignItems: 'center'
+    }}>
+      {(isLoading || isBuffering) && (
+        <View style={{
+          position: 'absolute',
+          zIndex: 1,
+          alignItems: 'center'
+        }}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={{ color: 'white', marginTop: 10 }}>
+            {isLoading ? 'Loading video...' : 'Buffering...'}
+          </Text>
+        </View>
       )}
-      <WebView
-        source={{ html: htmlContent }}
-        style={{ backgroundColor: 'black' }}
-        allowsFullscreenVideo
-        mediaPlaybackRequiresUserAction={false}
-        onLoadEnd={() => setIsLoading(false)}
+      
+      <Video
+        ref={video}
+        style={{
+          width: '100%',
+          height: '100%'
+        }}
+        source={{
+          uri: finalVideoUrl,
+          overrideFileExtensionAndroid: 'mp4'
+        }}
+        useNativeControls
+        resizeMode="contain"
+        isLooping={false}
+        shouldPlay={false}
+        volume={1.0}
+        isMuted={false}
+        onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+        onLoadStart={() => {
+          setIsLoading(true);
+          setIsBuffering(false);
+        }}
+        onLoad={async (status) => {
+          setIsLoading(false);
+          console.log("Video loaded successfully", status);
+          if (video.current) {
+            try {
+              await video.current.setVolumeAsync(1.0);
+              await video.current.setIsMutedAsync(false);
+            } catch (error) {
+              console.error("Error setting initial audio:", error);
+            }
+          }
+        }}
+        onError={(error) => {
+          console.error("Video error:", {
+            error,
+            url: finalVideoUrl
+          });
+          setIsLoading(false);
+        }}
       />
+
+      {/* Nút xem lại với animation */}
+      {isFinished && (
+        <TouchableOpacity
+          onPress={handleReplay}
+          style={{
+            position: 'absolute',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            padding: 15,
+            borderRadius: 50,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            transform: [{ scale: 1 }], // Thêm animation scale khi xuất hiện
+          }}
+        >
+          <Ionicons name="reload" size={24} color="white" />
+          <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>
+            Xem lại
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 });
@@ -78,6 +204,8 @@ const CourseVideo = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [completedLessons, setCompletedLessons] = useState([]);
+
+  console.log("Video URL from params:", videoUrl); // Debug log to see the URL
 
   // Tạo object lesson từ params để giống với myCourseDetail
   const currentLesson = {
@@ -231,7 +359,7 @@ const CourseVideo = () => {
             )}
           </View>
 
-          {/* Notes */}
+         
           <View className="mt-6">
             <Text className="text-gray-800 font-semibold mb-3">Notes:</Text>
             <Text className="text-gray-600 mb-2">• Watch the entire video to understand the lesson content</Text>

@@ -1,5 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
-import React, { useEffect, useCallback, memo } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from "react-native";
+import React, { useEffect, useCallback, memo, useState } from "react";
 import { useRouter } from 'expo-router';
 import { useMyCourseContext } from "../../context/MyCourseContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -35,10 +35,10 @@ const CourseCard = memo(({ course, onPress }) => {
         
         <View className="border-t border-gray-100 pt-2">
           <View className="flex-row space-x-12 mb-1.5">
-            <Text className="text-gray-500 text-xs">
+            <Text className="text-gray-500 text-xs pr-2">
               Created: {formatDate(course.createdAt)}
             </Text>
-            <Text className="text-gray-500 text-xs">
+            <Text className="text-gray-500 text-xs pr-2">
               Updated: {formatDate(course.updatedAt)}
             </Text>
           </View>
@@ -58,14 +58,22 @@ const CourseCard = memo(({ course, onPress }) => {
 const MyCourses = () => {
   const router = useRouter();
   const { courses, fetchMyCourses } = useMyCourseContext();
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     let mounted = true;
-    if (fetchMyCourses) {
-      fetchMyCourses().then(() => {
-        if (!mounted) return;
-      });
-    }
+    
+    const loadCourses = async () => {
+      try {
+        await fetchMyCourses();
+      } catch (error) {
+        console.error("Error loading courses:", error);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+
+    loadCourses();
     return () => { mounted = false; };
   }, [fetchMyCourses]);
 
@@ -76,10 +84,20 @@ const MyCourses = () => {
     });
   }, [router]);
 
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-gray-50 justify-center items-center">
+        <ActivityIndicator size="large" color="#3b82f6" />
+        <Text className="text-gray-600 mt-4">Loading courses...</Text>
+      </View>
+    );
+  }
+
   if (!courses?.length) {
     return (
-      <View className="flex-1 bg-gray-100 justify-center items-center">
-        <Text className="text-gray-500 text-lg">
+      <View className="flex-1 bg-gray-50 justify-center items-center">
+        <Ionicons name="book-outline" size={48} color="#9ca3af" />
+        <Text className="text-gray-500 text-lg mt-4">
           No courses available
         </Text>
       </View>

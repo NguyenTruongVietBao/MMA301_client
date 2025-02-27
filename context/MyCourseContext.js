@@ -107,7 +107,7 @@ export const MyCourseProvider = ({ children }) => {
     try {
       // Lấy path từ URL Firebase Storage
       const url = new URL(videoUrl);
-      const pathFromUrl = decodeURIComponent(url.pathname.split('/o/')[1]);
+      const pathFromUrl = decodeURIComponent(url.pathname.split(/\//g, '%2F')[1]);
       
       // Tạo reference và lấy download URL
       const videoRef = ref(storage, pathFromUrl);
