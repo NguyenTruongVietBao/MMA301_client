@@ -30,7 +30,8 @@ export const MyCourseProvider = ({ children }) => {
   const [courses, setCourses] = useState([]);
   const [currentCourse, setCurrentCourse] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [isLoading, setIsLoading] = useState(false); // ✅ Thêm trạng thái loading
+  const [isLoading, setIsLoading] = useState(false);
+  const [completedLessons, setCompletedLessons] = useState([]);
 
   // ✅ Tạo một axios instance mới mỗi lần gọi API để luôn lấy token mới nhất
   const getAxiosInstance = () => {
@@ -71,14 +72,66 @@ export const MyCourseProvider = ({ children }) => {
     }
   };
 
+  // Helper function to count videos in a course
+  const countVideosInCourse = (courseData) => {
+    let videoCount = 0;
+    
+    // Check for chapters structure
+    if (courseData.chapters && Array.isArray(courseData.chapters)) {
+      courseData.chapters.forEach(chapter => {
+        if (chapter.lessons && Array.isArray(chapter.lessons)) {
+          chapter.lessons.forEach(lesson => {
+            if (lesson.videoUrl) videoCount++;
+          });
+        }
+      });
+    }
+    
+    // Check if the course has direct lessons array (alternative structure)
+    if (courseData.lessons && Array.isArray(courseData.lessons)) {
+      courseData.lessons.forEach(lesson => {
+        if (lesson.videoUrl) videoCount++;
+      });
+    }
+    
+    return videoCount;
+  };
+
   // ✅ Lấy danh sách khóa học của user
   const fetchMyCourses = async () => {
-    if (isLoading || courses.length > 0) return; // Tránh gọi API nếu đã có dữ liệu
+    if (isLoading) return; // Tránh gọi API nếu đang loading
     setIsLoading(true);
     try {
       const res = await retryRequest(() => getAxiosInstance().get("/courses/my-courses/purchased"));
-      setCourses(res.data || []);
-      return res.data;
+      
+      // Process each course to get detailed information including videos
+      const coursesWithDetails = await Promise.all((res.data || []).map(async (course) => {
+        try {
+          // Get detailed course information for each course
+          const detailRes = await retryRequest(() => 
+            getAxiosInstance().get(`/courses/${course._id}`)
+          );
+          
+          const courseDetail = Array.isArray(detailRes.data) ? detailRes.data[0] : detailRes.data;
+          
+          // Count videos in the course
+          const videoCount = countVideosInCourse(courseDetail);
+          
+          // Return course with the video count
+          return { 
+            ...course, 
+            videoCount,
+            // If the course from list doesn't have chapters but detail does, use those
+            chapters: course.chapters || courseDetail.chapters
+          };
+        } catch (error) {
+          console.error(`Error getting details for course ${course._id}:`, error.message);
+          return { ...course, videoCount: 0 };
+        }
+      }));
+      
+      setCourses(coursesWithDetails);
+      return coursesWithDetails;
     } catch (error) {
       console.error("Lỗi khi tải khóa học:", error.message);
       setCourses([]);
@@ -92,8 +145,13 @@ export const MyCourseProvider = ({ children }) => {
     try {
       const res = await retryRequest(() => getAxiosInstance().get(`/courses/${courseId}`));
       const courseData = Array.isArray(res.data) ? res.data[0] : res.data;
-      setCurrentCourse(courseData);
-      return courseData;
+      
+      // Count videos in the course
+      const videoCount = countVideosInCourse(courseData);
+      
+      const enhancedCourseData = { ...courseData, videoCount };
+      setCurrentCourse(enhancedCourseData);
+      return enhancedCourseData;
     } catch (error) {
       console.error("Lỗi khi tải chi tiết khóa học:", error.message);
       setCurrentCourse(null);
@@ -129,8 +187,6 @@ export const MyCourseProvider = ({ children }) => {
       const { access_token } = JSON.parse(userData);
       if (!access_token) throw new Error("Token không hợp lệ");
 
-      console.log("Đang cập nhật lesson:", lessonId); // Debug log
-
       const response = await axios.post(
         `${BASE_URL}/lessons/completed/${lessonId}`,
         {},
@@ -141,18 +197,22 @@ export const MyCourseProvider = ({ children }) => {
         }
       );
 
-      console.log("Response từ server:", response.data); // Debug log
+      // Kiểm tra response và cập nhật state ngay lập tức
+      if (response.data) {
+        setCompletedLessons(prev => {
+          // Kiểm tra nếu lessonId chưa tồn tại thì mới thêm vào
+          if (!prev.includes(lessonId)) {
+            return [...prev, lessonId];
+          }
+          return prev;
+        });
+        return { success: true, message: "Cập nhật thành công" };
+      }
 
-      return {
-        success: response.data.errorCode === 1,
-        message: response.data.message
-      };
+      return { success: false, message: response.data.message };
     } catch (error) {
-      console.error("Chi tiết lỗi:", {
-        message: error.message,
-        response: error.response?.data
-      });
-      throw new Error(error.response?.data?.message || "Không thể cập nhật tiến độ");
+      console.error("Chi tiết lỗi:", error);
+      throw error;
     }
   };
 
@@ -174,38 +234,54 @@ export const MyCourseProvider = ({ children }) => {
         }
       );
 
-      console.log("Completed lessons:", response.data); // Debug log
-      return response.data || [];
+      const completed = response.data || [];
+      console.log('Fetched completed lessons:', completed);
+      setCompletedLessons(completed);
+      return completed;
     } catch (error) {
       console.error("Lỗi lấy danh sách hoàn thành:", error);
       return [];
     }
   };
 
-  // Kiểm tra một bài học đã hoàn thành chưa
-  const isLessonCompleted = async (lessonId) => {
+  // Thêm hàm refreshCompletedLessons
+  const refreshCompletedLessons = async () => {
     try {
-      const completedLessons = await getCompletedLessons();
-      return completedLessons.includes(lessonId);
+      const completed = await getCompletedLessons();
+      setCompletedLessons(completed);
+      return completed;
     } catch (error) {
-      console.error("Lỗi kiểm tra trạng thái hoàn thành:", error);
-      return false;
+      console.error("Lỗi refresh completed lessons:", error);
+      throw error;
     }
   };
+
+  // Cập nhật hàm isLessonCompleted để sử dụng state
+  const isLessonCompleted = (lessonId) => {
+    return completedLessons.includes(lessonId);
+  };
+
+  // Thêm useEffect để load completed lessons khi component mount
+  useEffect(() => {
+    getCompletedLessons();
+  }, []);
 
   // ✅ Trả về context value
   const value = {
     courses,
     currentCourse,
     categories,
-    isLoading, // ✅ Trả về trạng thái loading
+    isLoading,
+    completedLessons,
+    setCompletedLessons,
     fetchMyCourses,
     fetchCourseDetail,
     fetchCategories,
     updateLessonProgress,
     getVideoAccessUrl,
     isLessonCompleted,
-    getCompletedLessons
+    getCompletedLessons,
+    refreshCompletedLessons
   };
 
   return <MyCourseContext.Provider value={value}>{children}</MyCourseContext.Provider>;

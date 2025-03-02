@@ -196,81 +196,46 @@ const CourseVideo = () => {
     updatedAt, 
     author 
   } = params;
-  const { updateLessonProgress, getCompletedLessons } = useMyCourseContext();
+  const { 
+    updateLessonProgress, 
+    completedLessons, 
+    setCompletedLessons,
+    getCompletedLessons
+  } = useMyCourseContext();
   const { authState } = useAuthContext();
   const router = useRouter();
   
-  const [isCompleted, setIsCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
-  const [completedLessons, setCompletedLessons] = useState([]);
 
-  console.log("Video URL from params:", videoUrl); // Debug log to see the URL
+  // Đơn giản hóa việc kiểm tra trạng thái hoàn thành
+  const isCompleted = completedLessons.includes(lessonId);
 
-  // Tạo object lesson từ params để giống với myCourseDetail
-  const currentLesson = {
-    _id: lessonId,
-    title: title,
-    videoUrl: videoUrl,
-    createdAt: createdAt,
-    updatedAt: updatedAt
-  };
-  
-  // Kiểm tra lesson đã hoàn thành
-  useEffect(() => {
-    const checkCompletion = async () => {
-      try {
-        const completed = await getCompletedLessons();
-        console.log("Completed lessons:", completed);
-        console.log("Current lesson ID:", lessonId);
-        
-        // Lưu danh sách lessons đã hoàn thành
-        setCompletedLessons(completed);
-        
-        // Kiểm tra lesson hiện tại có trong danh sách hoàn thành không
-        const isLessonCompleted = completed.includes(lessonId);
-        console.log("Is lesson completed:", isLessonCompleted);
-        
-        setIsCompleted(isLessonCompleted);
-      } catch (error) {
-        console.error("Lỗi kiểm tra hoàn thành:", error);
-      } finally {
-        setIsChecking(false);
-      }
-    };
+  // Thêm state để quản lý việc refresh UI
+  const [refreshKey, setRefreshKey] = useState(0);
 
-    if (lessonId) {
-      checkCompletion();
-    }
-  }, [lessonId]);
+  // Thêm ref cho ScrollView
+  const scrollViewRef = useRef(null);
 
-  // Xử lý hoàn thành bài học
   const handleComplete = useCallback(async () => {
-    if (isLoading || isCompleted) return;
-    
-    // Kiểm tra lại một lần nữa trước khi cập nhật
-    if (completedLessons.includes(lessonId)) {
-      Alert.alert("Thông báo", "Bài học này đã được hoàn thành!");
-      setIsCompleted(true);
-      return;
-    }
+    if (isLoading) return;
     
     setIsLoading(true);
     try {
       const result = await updateLessonProgress(lessonId);
       if (result.success) {
-        // Cập nhật danh sách lessons đã hoàn thành
-        setCompletedLessons(prev => [...prev, lessonId]);
-        setIsCompleted(true);
-        Alert.alert("Thành công", result.message || "Đã hoàn thành bài học");
+        Alert.alert("Thành công", "Đã cập nhật tiến độ bài học!");
       }
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
-      Alert.alert("Lỗi", error.message || "Không thể cập nhật tiến độ. Vui lòng thử lại sau.");
+      if (error.response?.status === 401) {
+        Alert.alert("Phiên đăng nhập hết hạn", "Vui lòng đăng nhập lại");
+      } else {
+        Alert.alert("Lỗi", "Không thể cập nhật tiến độ. Vui lòng thử lại sau.");
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, isCompleted, lessonId, completedLessons]);
+  }, [isLoading, lessonId]);
 
   // Format date
   const formatDate = (dateString) => {
@@ -299,21 +264,24 @@ const CourseVideo = () => {
         }} 
       />
 
-      <ScrollView className="flex-1 bg-white">
+      <ScrollView 
+        ref={scrollViewRef}
+        key={refreshKey} 
+        className="flex-1 bg-white"
+      >
         <View className="bg-black">
           <VideoPlayer videoUrl={videoUrl} />
         </View>
 
         <View className="p-5">
-          {/* Complete Button */}
           <TouchableOpacity
             onPress={handleComplete}
-            disabled={isLoading || isCompleted || isChecking}
+            disabled={isLoading}
             className={`p-4 rounded-xl flex-row items-center justify-center ${
               isCompleted ? "bg-[#4ade80]" : "bg-[#3b82f6]"
             }`}
           >
-            {isChecking ? (
+            {isLoading ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
               <>
@@ -323,11 +291,7 @@ const CourseVideo = () => {
                   color="white"
                 />
                 <Text className="text-white font-semibold text-lg ml-2">
-                  {isLoading 
-                    ? "Processing..." 
-                    : isCompleted 
-                      ? "Completed" 
-                      : "Mark as Complete"}
+                  {isCompleted ? "Completed" : "Mark as Complete"}
                 </Text>
               </>
             )}

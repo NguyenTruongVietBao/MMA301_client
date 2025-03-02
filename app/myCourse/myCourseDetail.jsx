@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, memo } from "react";
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useMyCourseContext } from "../../context/MyCourseContext";
+import { useFocusEffect } from '@react-navigation/native';
 
 const ChapterCard = memo(({ chapter, onLessonPress, isExpanded, onToggle, completedLessons }) => {
   const handleDownloadDocument = async (documentUrl) => {
@@ -115,7 +116,7 @@ const CourseDetail = () => {
   const { courseId } = useLocalSearchParams();
   const router = useRouter();
   const [expandedChapter, setExpandedChapter] = useState(null);
-  const { currentCourse, fetchCourseDetail, getCompletedLessons } = useMyCourseContext();
+  const { currentCourse, fetchCourseDetail, getCompletedLessons, refreshCompletedLessons } = useMyCourseContext();
   const [completedLessons, setCompletedLessons] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -142,6 +143,21 @@ const CourseDetail = () => {
     initializeData();
     return () => { mounted = false; };
   }, [courseId]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const updateCompletedLessons = async () => {
+        try {
+          const updated = await refreshCompletedLessons();
+          setCompletedLessons(updated);
+        } catch (error) {
+          console.error("Lỗi refresh completed lessons:", error);
+        }
+      };
+
+      updateCompletedLessons();
+    }, [])
+  );
 
   const handleLessonPress = useCallback((lesson) => {
     router.push({
