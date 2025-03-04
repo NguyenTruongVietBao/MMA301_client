@@ -48,6 +48,13 @@ const RootLayout = () => {
             title: "Detail course",
           }}
         />
+        <Stack.Screen
+          name="checkout/Payment"
+          options={{
+            headerBackButtonDisplayMode: false,
+            title: "Payment",
+          }}
+        />
       </Stack>
     </AuthProvider>
   );

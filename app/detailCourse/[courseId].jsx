@@ -10,13 +10,15 @@ import {
   ActivityIndicator,
 } from "react-native";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
-import sampleDataCourse from "../../constants/courses"; // Assuming course data exists here
+ // Assuming course data exists here
 import { Dropdown } from "react-native-element-dropdown";
 import { AntDesign } from "@expo/vector-icons";
 import axiosInstance from "../../utils/axiosInstance";
 
 const CourseDetailScreen = () => {
+  const router = useRouter();
   const { courseId } = useLocalSearchParams();
   const [value, setValue] = useState(null);
   const [course, setCourse] = useState(null); // Store course data
@@ -99,7 +101,7 @@ const CourseDetailScreen = () => {
           <View className="ml-2 w-4/5">
             <TouchableOpacity
               className="bg-[#4B6EF5] py-4 rounded-full"
-              onPress={() => {}}
+              onPress={() => router.push({ pathname: "/checkout/Payment", params: { courseId } })}
             >
               <Text className="text-white text-center font-bold text-lg">
                 Buy now
