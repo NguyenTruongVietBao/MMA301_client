@@ -3,6 +3,7 @@ import { SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import { AuthProvider } from "../context/AuthContext";
+import { MyCourseProvider } from "../context/MyCourseContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,28 +35,30 @@ const RootLayout = () => {
 
   return (
     <AuthProvider>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="detailCategory/[categoryId]"
-          options={{ title: "List course" }}
-        />
-        <Stack.Screen
-          name="detailCourse/[courseId]"
-          options={{
-            headerBackButtonDisplayMode: false,
-            title: "Detail course",
-          }}
-        />
-        <Stack.Screen
+      <MyCourseProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="detailCategory/[categoryId]"
+            options={{ title: "List course" }}
+          />
+          <Stack.Screen
+            name="detailCourse/[courseId]"
+            options={{
+              headerBackButtonDisplayMode: false,
+              title: "Detail course",
+            }}
+          />
+          <Stack.Screen
           name="checkout/Payment"
           options={{
             headerBackButtonDisplayMode: false,
             title: "Payment",
           }}
         />
-      </Stack>
+        </Stack>
+      </MyCourseProvider>
     </AuthProvider>
   );
 };
