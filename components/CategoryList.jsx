@@ -11,25 +11,25 @@ const defaultImages = [
 
 const CategoryList = ({ data }) => {
   return (
-      <View>
-        {data.length > 0 ? (
-            <View className="flex-wrap flex-row justify-between mx-9 gap-10">
-              {data.map((category, index) => (
-                  <Link href={`/detailCategory/${category._id}`} key={category._id}>
-                    <CategoryCard
-                        categoryName={category.title}
-                        imageUrl={
-                            category.imageUrl ||
-                            defaultImages[index % defaultImages.length]
-                        }
-                    />
-                  </Link>
-              ))}
-            </View>
-        ) : (
-            <Text>No category</Text>
-        )}
-      </View>
+    <View>
+      {data.length > 0 ? (
+        <View className="flex-wrap flex-row justify-between mx-9 gap-10">
+          {data.map((category, index) => (
+            <Link href={`/detailCategory/${category._id}`} key={category._id}>
+              <CategoryCard
+                categoryName={category.title}
+                imageUrl={
+                  category.imageUrl ||
+                  defaultImages[index % defaultImages.length]
+                }
+              />
+            </Link>
+          ))}
+        </View>
+      ) : (
+        <Text className="text-center text-lg text-gray-400">No category</Text>
+      )}
+    </View>
   );
 };
 

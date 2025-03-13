@@ -1,16 +1,21 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Dimensions, BackHandler } from "react-native";
-import { Video, AVPlaybackStatus } from 'expo-av';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  Dimensions,
+} from "react-native";
+import { Video } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useMyCourseContext } from "../../context/MyCourseContext";
 import { useAuthContext } from "../../context/AuthContext";
-import * as ScreenOrientation from 'expo-screen-orientation';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from 'axios';
-import axiosInstance from "../../utils/axiosInstance";
-import { WebView } from 'react-native-webview';
-import { Audio } from 'expo-av';
+import * as ScreenOrientation from "expo-screen-orientation";
+
+import { Audio } from "expo-av";
 
 const VideoPlayer = React.memo(({ videoUrl }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -18,9 +23,9 @@ const VideoPlayer = React.memo(({ videoUrl }) => {
   const [isFinished, setIsFinished] = useState(false);
   const [orientation, setOrientation] = useState(1); // 1 for portrait, 2 for landscape
   const video = useRef(null);
-  const screenWidth = Dimensions.get('window').width;
-  const screenHeight = Dimensions.get('window').height;
-  const videoHeight = orientation === 1 ? screenWidth * (9/16) : screenHeight;
+  const screenWidth = Dimensions.get("window").width;
+  const screenHeight = Dimensions.get("window").height;
+  const videoHeight = orientation === 1 ? screenWidth * (9 / 16) : screenHeight;
   const videoWidth = orientation === 1 ? screenWidth : screenWidth;
 
   // Cấu hình âm thanh khi component mount
@@ -32,7 +37,7 @@ const VideoPlayer = React.memo(({ videoUrl }) => {
           staysActiveInBackground: true,
           playsInSilentModeIOS: true,
           shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false
+          playThroughEarpieceAndroid: false,
         });
         console.log("Audio mode set successfully");
       } catch (error) {
@@ -45,9 +50,11 @@ const VideoPlayer = React.memo(({ videoUrl }) => {
 
   // Xử lý xoay màn hình
   useEffect(() => {
-    const subscription = ScreenOrientation.addOrientationChangeListener((event) => {
-      setOrientation(event.orientationInfo.orientation);
-    });
+    const subscription = ScreenOrientation.addOrientationChangeListener(
+      (event) => {
+        setOrientation(event.orientationInfo.orientation);
+      }
+    );
 
     return () => {
       subscription.remove();
@@ -63,7 +70,7 @@ const VideoPlayer = React.memo(({ videoUrl }) => {
 
   const processVideoUrl = (url) => {
     try {
-      return url.replace(/\/videos\//g, '/videos%2F');
+      return url.replace(/\/videos\//g, "/videos%2F");
     } catch (error) {
       console.error("Error processing URL:", error);
       return url;
@@ -75,10 +82,10 @@ const VideoPlayer = React.memo(({ videoUrl }) => {
       if (isLoading) {
         setIsLoading(false);
       }
-      
+
       // Theo dõi trạng thái buffering
       setIsBuffering(status.isBuffering);
-      
+
       if (status.didJustFinish) {
         setIsFinished(true);
       }
@@ -97,36 +104,40 @@ const VideoPlayer = React.memo(({ videoUrl }) => {
   console.log("Final video URL:", finalVideoUrl);
 
   return (
-    <View style={{ 
-      width: videoWidth, 
-      height: videoHeight,
-      backgroundColor: 'black',
-      position: 'relative',
-      justifyContent: 'center',
-      alignItems: 'center'
-    }}>
+    <View
+      style={{
+        width: videoWidth,
+        height: videoHeight,
+        backgroundColor: "black",
+        position: "relative",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
       {(isLoading || isBuffering) && (
-        <View style={{
-          position: 'absolute',
-          zIndex: 1,
-          alignItems: 'center'
-        }}>
+        <View
+          style={{
+            position: "absolute",
+            zIndex: 1,
+            alignItems: "center",
+          }}
+        >
           <ActivityIndicator size="large" color="#fff" />
-          <Text style={{ color: 'white', marginTop: 10 }}>
-            {isLoading ? 'Loading video...' : 'Buffering...'}
+          <Text style={{ color: "white", marginTop: 10 }}>
+            {isLoading ? "Loading video..." : "Buffering..."}
           </Text>
         </View>
       )}
-      
+
       <Video
         ref={video}
         style={{
-          width: '100%',
-          height: '100%'
+          width: "100%",
+          height: "100%",
         }}
         source={{
           uri: finalVideoUrl,
-          overrideFileExtensionAndroid: 'mp4'
+          overrideFileExtensionAndroid: "mp4",
         }}
         useNativeControls
         resizeMode="contain"
@@ -154,7 +165,7 @@ const VideoPlayer = React.memo(({ videoUrl }) => {
         onError={(error) => {
           console.error("Video error:", {
             error,
-            url: finalVideoUrl
+            url: finalVideoUrl,
           });
           setIsLoading(false);
         }}
@@ -165,18 +176,18 @@ const VideoPlayer = React.memo(({ videoUrl }) => {
         <TouchableOpacity
           onPress={handleReplay}
           style={{
-            position: 'absolute',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            position: "absolute",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
             padding: 15,
             borderRadius: 50,
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             gap: 8,
             transform: [{ scale: 1 }], // Thêm animation scale khi xuất hiện
           }}
         >
           <Ionicons name="reload" size={24} color="white" />
-          <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>
+          <Text style={{ color: "white", fontSize: 16, fontWeight: "500" }}>
             Xem lại
           </Text>
         </TouchableOpacity>
@@ -187,24 +198,24 @@ const VideoPlayer = React.memo(({ videoUrl }) => {
 
 const CourseVideo = () => {
   const params = useLocalSearchParams();
-  const { 
-    lessonId, 
-    title, 
-    description, 
-    videoUrl, 
-    createdAt, 
-    updatedAt, 
-    author 
+  const {
+    lessonId,
+    title,
+    description,
+    videoUrl,
+    createdAt,
+    updatedAt,
+    author,
   } = params;
-  const { 
-    updateLessonProgress, 
-    completedLessons, 
+  const {
+    updateLessonProgress,
+    completedLessons,
     setCompletedLessons,
-    getCompletedLessons
+    getCompletedLessons,
   } = useMyCourseContext();
   const { authState } = useAuthContext();
   const router = useRouter();
-  
+
   const [isLoading, setIsLoading] = useState(false);
 
   // Đơn giản hóa việc kiểm tra trạng thái hoàn thành
@@ -218,7 +229,7 @@ const CourseVideo = () => {
 
   const handleComplete = useCallback(async () => {
     if (isLoading) return;
-    
+
     setIsLoading(true);
     try {
       const result = await updateLessonProgress(lessonId);
@@ -243,10 +254,10 @@ const CourseVideo = () => {
       if (!dateString) return "No data";
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "No data";
-      return date.toLocaleDateString('en-US', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
+      return date.toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
       });
     } catch (error) {
       return "No data";
@@ -255,18 +266,18 @@ const CourseVideo = () => {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           headerTitle: title || "Lesson",
           headerTitleStyle: { fontSize: 18 },
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: 'white' },
-        }} 
+          headerStyle: { backgroundColor: "white" },
+        }}
       />
 
-      <ScrollView 
+      <ScrollView
         ref={scrollViewRef}
-        key={refreshKey} 
+        key={refreshKey}
         className="flex-1 bg-white"
       >
         <View className="bg-black">
@@ -305,7 +316,7 @@ const CourseVideo = () => {
                 Created: {formatDate(createdAt)}
               </Text>
             </View>
-            
+
             <View className="flex-row items-center mb-2">
               <Ionicons name="refresh-outline" size={20} color="#6b7280" />
               <Text className="text-gray-600 ml-2">
@@ -323,12 +334,17 @@ const CourseVideo = () => {
             )}
           </View>
 
-         
           <View className="mt-6">
             <Text className="text-gray-800 font-semibold mb-3">Notes:</Text>
-            <Text className="text-gray-600 mb-2">• Watch the entire video to understand the lesson content</Text>
-            <Text className="text-gray-600 mb-2">• Complete assigned exercises (if any)</Text>
-            <Text className="text-gray-600">• Mark as complete when you've mastered the material</Text>
+            <Text className="text-gray-600 mb-2">
+              • Watch the entire video to understand the lesson content
+            </Text>
+            <Text className="text-gray-600 mb-2">
+              • Complete assigned exercises (if any)
+            </Text>
+            <Text className="text-gray-600">
+              • Mark as complete when you've mastered the material
+            </Text>
           </View>
         </View>
       </ScrollView>

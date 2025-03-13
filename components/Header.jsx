@@ -1,115 +1,59 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-} from "react-native";
-import React from "react";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuthContext } from "../context/AuthContext";
+import SearchInput from "./SearchInput";
 
-export default function Header() {
+export default function Header({ onSearch }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const { authState } = useAuthContext();
+
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+    if (onSearch) {
+      onSearch(text);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    if (onSearch) {
+      onSearch("");
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      {/* Greeting and Notification */}
-      <View style={styles.headerRow}>
+    <View className="bg-[#4B6EF5] p-6 rounded-3xl m-3">
+      <View className="flex-row justify-between items-center mb-5">
         <View>
-          <Text style={styles.greeting}>Hello,</Text>
-          <Text style={styles.subGreeting}>Good Morning</Text>
+          <Text className="text-2xl font-bold text-white">
+            Hello, {authState.user.email}
+          </Text>
+          <Text className="text-base text-white mt-1">Welcome</Text>
         </View>
-        <TouchableOpacity style={styles.notification}>
+        <TouchableOpacity className="relative bg-white/20 rounded-full p-2">
           <Ionicons name="notifications-outline" size={24} color="#fff" />
-          <View style={styles.notificationDot} />
+          <View className="absolute top-1 right-1 w-2 h-2 bg-[#FF4D4F] rounded-full" />
         </TouchableOpacity>
       </View>
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#aaa" style={styles.icon} />
+
+      <View className="flex-row items-center bg-white rounded-2xl py-3 px-3">
+        <View className="flex-row items-center flex-1">
+          <Ionicons name="search" size={20} color="#aaa" className="mr-2" />
           <TextInput
-            style={styles.input}
+            className="flex-1 text-base text-gray-800"
             placeholder="Search"
             placeholderTextColor="#aaa"
+            value={searchQuery}
+            onChangeText={handleSearch}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={clearSearch} className="mr-2">
+              <Ionicons name="close-circle" size={20} color="#aaa" />
+            </TouchableOpacity>
+          )}
         </View>
-        <TouchableOpacity style={styles.filterButton}>
-          <MaterialIcons name="arrow-drop-down" size={24} color="#aaa" />
-          <Text style={styles.filterText}>All</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: "#4B6EF5",
-    padding: 20,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    margin: 10,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  subGreeting: {
-    fontSize: 16,
-    color: "#fff",
-    marginTop: 4,
-  },
-  notification: {
-    position: "relative",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 20,
-    padding: 8,
-  },
-  notificationDot: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    width: 8,
-    height: 8,
-    backgroundColor: "#FF4D4F",
-    borderRadius: 4,
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 15,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  icon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: "#333",
-  },
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 10,
-  },
-  filterText: {
-    fontSize: 14,
-    color: "#aaa",
-  },
-});

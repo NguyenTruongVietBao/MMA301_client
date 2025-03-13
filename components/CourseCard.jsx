@@ -1,39 +1,40 @@
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, TouchableOpacity } from "react-native";
 import React from "react";
-import { Link } from "expo-router";
+import { currencyFormat } from "../utils";
 
-const CourseCard = ({ _id, title, price, category, description, thumbnailUrl }) => {
+const CourseCard = ({ _id, title, price, thumbnailUrl, onPress }) => {
   return (
-    <Link href={`/detailCourse/${_id}`}>
-      <View className="w-[180px] h-[250px] gap-5 bg-white rounded-3xl">
+    <TouchableOpacity onPress={onPress} className="mx-4">
+      <View className="p-2 bg-white rounded-3xl border-2 border-blue-500">
         <Image
-            source={
-              thumbnailUrl
-                  ? { uri: thumbnailUrl } // Remote image
-                  : require("../assets/images/logo-music-1.png") // Fallback image
-            }
-            className="mx-auto h-[120px] w-[80%]"
-            resizeMode="contain"
+          source={
+            thumbnailUrl
+              ? { uri: thumbnailUrl }
+              : require("../assets/images/logo-music-1.png")
+          }
+          className="mx-auto h-[120px] w-[150px]"
+          resizeMode="contain"
         />
-        <View className="w-full ml-4">
-          <View className="py-1">
-            <Text className="text-[#4B6EF5] font-psemibold text-2xl">
-              ${price}
-            </Text>
-          </View>
-          <View className="pb-1">
-            <Text className="font-psemibold text-gray-800 text-lg">
+
+        <View className="w-[150px] mx-auto">
+          <View className="">
+            <Text className="font-psemibold text-gray-800 text-xl">
               {title}
             </Text>
           </View>
-          <View className="">
+          <View className="my-2">
             <Text className="font-pmedium text-slate-400 text-sm">
-              291 Students
+              210 Lessons
+            </Text>
+          </View>
+          <View className="flex-row justify-end">
+            <Text className="text-end text-[#4B6EF5] font-psemibold text-2xl">
+              {currencyFormat.format(price)}
             </Text>
           </View>
         </View>
       </View>
-    </Link>
+    </TouchableOpacity>
   );
 };
 

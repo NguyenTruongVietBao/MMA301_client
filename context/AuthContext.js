@@ -3,6 +3,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const BASE_URL = "https://mma301-backend.onrender.com/api";
+// const BASE_URL = "http://localhost:3000/api";
 
 const AuthContext = createContext({});
 export const useAuthContext = () => useContext(AuthContext);
@@ -55,10 +56,12 @@ export const AuthProvider = ({ children }) => {
         const userData = {
           ...res.data,
           access_token: res.data.access_token,
-          refresh_token: res.data.refresh_token
+          refresh_token: res.data.refresh_token,
         };
         await AsyncStorage.setItem("user", JSON.stringify(userData));
         setAuthState({ user: userData, authenticated: true });
+        console.log("userData", userData);
+
         return userData;
       }
     } catch (error) {

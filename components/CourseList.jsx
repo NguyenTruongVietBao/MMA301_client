@@ -2,27 +2,28 @@ import { Text, ScrollView, StyleSheet, View } from "react-native";
 import React from "react";
 import CourseCard from "./CourseCard";
 
-const CourseList = ({ data }) => {
+const CourseList = ({ data, onCoursePress }) => {
   return (
-      <ScrollView contentContainerStyle={styles.container}>
-        {data.length > 0 ? (
-            <View style={styles.courseContainer}>
-              {data.map((course) => (
-                  <CourseCard
-                      key={course._id}
-                      _id={course._id}
-                      price={course.price}
-                      title={course.title}
-                      description={course.description}
-                      category={course.category}
-                      thumbnailUrl={course.thumbnailUrl} // Update to match the API response
-                  />
-              ))}
-            </View>
-        ) : (
-            <Text style={styles.noCourseText}>No courses available</Text>
-        )}
-      </ScrollView>
+    <ScrollView contentContainerStyle={styles.container}>
+      {data.length > 0 ? (
+        <View style={styles.courseContainer}>
+          {data.map((course) => (
+            <CourseCard
+              key={course._id}
+              _id={course._id}
+              price={course.price}
+              title={course.title}
+              description={course.description}
+              category={course.category}
+              thumbnailUrl={course.thumbnailUrl}
+              onPress={() => onCoursePress(course._id)}
+            />
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.noCourseText}>No courses available</Text>
+      )}
+    </ScrollView>
   );
 };
 

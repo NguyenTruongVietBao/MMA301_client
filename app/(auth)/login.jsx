@@ -15,7 +15,6 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!onLogin) {
-      console.error("⚠️ onLogin function is not available");
       Alert.alert("Login function is not available.");
       return;
     }
@@ -39,7 +38,7 @@ export default function Login() {
   };
 
   return (
-    <View className="h-full">
+    <View className="h-screen">
       <ImageBackground
         source={require("../../assets/images/background-login.jpg")}
         style={{ flex: 1, justifyContent: "center" }}
@@ -55,7 +54,7 @@ export default function Login() {
             <Text
               className={"text-2xl mb-4 text-center text-semibold font-medium"}
             >
-              Login to continue your account
+              Login to learning new things
             </Text>
             <FormField
               title={"Email"}
@@ -89,9 +88,9 @@ export default function Login() {
               isLoading={isSubmitting}
               textStyles={"text-xl"}
             />
-            <View className={"justify-center pt-5 flex-row gap-2"}>
+            <View className={"items-center justify-center pt-5 flex-row gap-2"}>
               <Text className={"text-lg"}>Don't have any account ?</Text>
-              <Link href={"/register"} className={"text-lg font-pmedium"}>
+              <Link href={"/register"} className={"text-lg font-pmedium mt-1"}>
                 Sign Up
               </Link>
             </View>

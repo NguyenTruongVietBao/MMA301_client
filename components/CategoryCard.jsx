@@ -1,35 +1,24 @@
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import React from "react";
-import AntDesign from "@expo/vector-icons/AntDesign";
+
 export default function CategoryCard({ categoryName, imageUrl }) {
   return (
-    <View
-      style={styles.shadow}
-      className="w-[160px] h-[150px] bg-slate-50 rounded-2xl"
-    >
-      <View className="flex justify-between items-center h-ful">
-        <Image
-          className="flex-row justify-center mx-auto h-[80%] w-[80%]"
-          source={imageUrl}
-          resizeMode="contain"
-        />
-        <View className="flex-row justify-between items-center w-full px-4">
-          <Text className="font-semibold text-gray-800 text-xl">
+    <View className="w-[160px] h-[190px] bg-slate-50 rounded-2xl p-3 border border-gray-300">
+      <View className="flex-1 justify-between">
+        <View className="flex-1 items-center justify-center">
+          <Image
+            className="w-[130px] h-[130px]"
+            source={imageUrl}
+            resizeMode="contain"
+          />
+        </View>
+
+        <View className="flex-row justify-center items-center w-full mt-2 px-1">
+          <Text className="font-bold text-gray-800 text-lg" numberOfLines={2}>
             {categoryName}
           </Text>
-          <AntDesign name="arrowright" size={20} color="#333" />
         </View>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  shadow: {
-    shadowColor: "#000",
-    shadowOffset: { width: 4, height: 4 }, // Right and bottom shadow
-    shadowOpacity: 0.2,
-    shadowRadius: 6, // Blur radius
-    elevation: 6, // For Android
-  },
-});

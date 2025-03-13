@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import { useAuthContext } from "./AuthContext";
-import { initializeApp } from 'firebase/app';
-import { getStorage, ref, getDownloadURL } from 'firebase/storage';
+import { initializeApp } from "firebase/app";
+import { getStorage, ref, getDownloadURL } from "firebase/storage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axiosInstance from "../utils/axiosInstance";
 
 const BASE_URL = "https://mma301-backend.onrender.com/api";
+// const BASE_URL = "http://localhost:3000/api";
 
 const MyCourseContext = createContext({});
 export const useMyCourseContext = () => useContext(MyCourseContext);
@@ -18,7 +20,7 @@ const firebaseConfig = {
   projectId: "your-project-id",
   storageBucket: "your-storage-bucket",
   messagingSenderId: "your-messaging-sender-id",
-  appId: "your-app-id"
+  appId: "your-app-id",
 };
 
 // Initialize Firebase
@@ -32,18 +34,6 @@ export const MyCourseProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [completedLessons, setCompletedLessons] = useState([]);
-
-  // ✅ Tạo một axios instance mới mỗi lần gọi API để luôn lấy token mới nhất
-  const getAxiosInstance = () => {
-    return axios.create({
-      baseURL: BASE_URL,
-      timeout: 10000,
-      headers: {
-        Authorization: `Bearer ${authState?.user?.access_token}`,
-        "Content-Type": "application/json",
-      },
-    });
-  };
 
   // ✅ Hàm retry request với delay tăng dần
   const retryRequest = async (fn, retries = 3, delay = 1000) => {
@@ -63,7 +53,7 @@ export const MyCourseProvider = ({ children }) => {
   // ✅ Lấy danh mục khóa học
   const fetchCategories = async () => {
     try {
-      const res = await retryRequest(() => getAxiosInstance().get("/categories"));
+      const res = await retryRequest(() => axiosInstance.get("/categories"));
       setCategories(res.data);
       return res.data;
     } catch (error) {
@@ -75,25 +65,23 @@ export const MyCourseProvider = ({ children }) => {
   // Helper function to count videos in a course
   const countVideosInCourse = (courseData) => {
     let videoCount = 0;
-    
     // Check for chapters structure
     if (courseData.chapters && Array.isArray(courseData.chapters)) {
-      courseData.chapters.forEach(chapter => {
+      courseData.chapters.forEach((chapter) => {
         if (chapter.lessons && Array.isArray(chapter.lessons)) {
-          chapter.lessons.forEach(lesson => {
+          chapter.lessons.forEach((lesson) => {
             if (lesson.videoUrl) videoCount++;
           });
         }
       });
     }
-    
     // Check if the course has direct lessons array (alternative structure)
     if (courseData.lessons && Array.isArray(courseData.lessons)) {
-      courseData.lessons.forEach(lesson => {
+      courseData.lessons.forEach((lesson) => {
         if (lesson.videoUrl) videoCount++;
       });
     }
-    
+
     return videoCount;
   };
 
@@ -102,34 +90,42 @@ export const MyCourseProvider = ({ children }) => {
     if (isLoading) return; // Tránh gọi API nếu đang loading
     setIsLoading(true);
     try {
-      const res = await retryRequest(() => getAxiosInstance().get("/courses/my-courses/purchased"));
-      
+      const res = await retryRequest(() =>
+        axiosInstance.get("/courses/my-courses/purchased")
+      );
       // Process each course to get detailed information including videos
-      const coursesWithDetails = await Promise.all((res.data || []).map(async (course) => {
-        try {
-          // Get detailed course information for each course
-          const detailRes = await retryRequest(() => 
-            getAxiosInstance().get(`/courses/${course._id}`)
-          );
-          
-          const courseDetail = Array.isArray(detailRes.data) ? detailRes.data[0] : detailRes.data;
-          
-          // Count videos in the course
-          const videoCount = countVideosInCourse(courseDetail);
-          
-          // Return course with the video count
-          return { 
-            ...course, 
-            videoCount,
-            // If the course from list doesn't have chapters but detail does, use those
-            chapters: course.chapters || courseDetail.chapters
-          };
-        } catch (error) {
-          console.error(`Error getting details for course ${course._id}:`, error.message);
-          return { ...course, videoCount: 0 };
-        }
-      }));
-      
+      const coursesWithDetails = await Promise.all(
+        (res.data || []).map(async (course) => {
+          try {
+            // Get detailed course information for each course
+            const detailRes = await retryRequest(() =>
+              axiosInstance.get(`/courses/${course._id}`)
+            );
+
+            const courseDetail = Array.isArray(detailRes.data)
+              ? detailRes.data[0]
+              : detailRes.data;
+
+            // Count videos in the course
+            const videoCount = countVideosInCourse(courseDetail);
+
+            // Return course with the video count
+            return {
+              ...course,
+              videoCount,
+              // If the course from list doesn't have chapters but detail does, use those
+              chapters: course.chapters || courseDetail.chapters,
+            };
+          } catch (error) {
+            console.error(
+              `Error getting details for course ${course._id}:`,
+              error.message
+            );
+            return { ...course, videoCount: 0 };
+          }
+        })
+      );
+
       setCourses(coursesWithDetails);
       return coursesWithDetails;
     } catch (error) {
@@ -143,12 +139,14 @@ export const MyCourseProvider = ({ children }) => {
   // ✅ Lấy chi tiết một khóa học
   const fetchCourseDetail = async (courseId) => {
     try {
-      const res = await retryRequest(() => getAxiosInstance().get(`/courses/${courseId}`));
+      const res = await retryRequest(() =>
+        axiosInstance.get(`/courses/${courseId}`)
+      );
       const courseData = Array.isArray(res.data) ? res.data[0] : res.data;
-      
+
       // Count videos in the course
       const videoCount = countVideosInCourse(courseData);
-      
+
       const enhancedCourseData = { ...courseData, videoCount };
       setCurrentCourse(enhancedCourseData);
       return enhancedCourseData;
@@ -165,12 +163,14 @@ export const MyCourseProvider = ({ children }) => {
     try {
       // Lấy path từ URL Firebase Storage
       const url = new URL(videoUrl);
-      const pathFromUrl = decodeURIComponent(url.pathname.split(/\//g, '%2F')[1]);
-      
+      const pathFromUrl = decodeURIComponent(
+        url.pathname.split(/\//g, "%2F")[1]
+      );
+
       // Tạo reference và lấy download URL
       const videoRef = ref(storage, pathFromUrl);
       const downloadUrl = await getDownloadURL(videoRef);
-      
+
       return downloadUrl;
     } catch (error) {
       console.error("Lỗi xử lý video URL:", error);
@@ -193,13 +193,13 @@ export const MyCourseProvider = ({ children }) => {
         {
           headers: {
             Authorization: `Bearer ${access_token}`,
-          }
+          },
         }
       );
 
       // Kiểm tra response và cập nhật state ngay lập tức
       if (response.data) {
-        setCompletedLessons(prev => {
+        setCompletedLessons((prev) => {
           // Kiểm tra nếu lessonId chưa tồn tại thì mới thêm vào
           if (!prev.includes(lessonId)) {
             return [...prev, lessonId];
@@ -225,17 +225,14 @@ export const MyCourseProvider = ({ children }) => {
       const { access_token } = JSON.parse(userData);
       if (!access_token) return [];
 
-      const response = await axios.get(
-        `${BASE_URL}/lessons/completed`,
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-          }
-        }
-      );
+      const response = await axios.get(`${BASE_URL}/lessons/completed`, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
 
       const completed = response.data || [];
-      console.log('Fetched completed lessons:', completed);
+      console.log("Fetched completed lessons:", completed);
       setCompletedLessons(completed);
       return completed;
     } catch (error) {
@@ -281,8 +278,12 @@ export const MyCourseProvider = ({ children }) => {
     getVideoAccessUrl,
     isLessonCompleted,
     getCompletedLessons,
-    refreshCompletedLessons
+    refreshCompletedLessons,
   };
 
-  return <MyCourseContext.Provider value={value}>{children}</MyCourseContext.Provider>;
+  return (
+    <MyCourseContext.Provider value={value}>
+      {children}
+    </MyCourseContext.Provider>
+  );
 };

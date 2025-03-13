@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, AntDesign } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 
@@ -10,16 +10,14 @@ const TabsLayout = () => {
         tabBarInactiveTintColor: "#93c5fd",
         tabBarStyle: {
           backgroundColor: "#fff",
-          borderTopStartRadius: 25,
-          borderTopEndRadius: 25,
+          borderRadius: 50,
           height: 70,
           paddingTop: 10,
-          position: "absolute", // Giúp bo góc hoạt động
-          left: 0,
-          right: 0,
-          bottom: 0,
-          shadowColor: "#000", // Bóng mờ
-          shadowRadius: 2,
+          marginHorizontal: 20,
+          position: "absolute",
+          left: 20,
+          right: 20,
+          bottom: 20,
         },
       }}
     >
@@ -47,6 +45,20 @@ const TabsLayout = () => {
               name={focused ? "list-circle" : "list-circle-outline"}
               color={color}
               size={29}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="favorites"
+        options={{
+          title: "Favorites",
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <AntDesign
+              name={focused ? "heart" : "hearto"}
+              color={color}
+              size={25}
             />
           ),
         }}

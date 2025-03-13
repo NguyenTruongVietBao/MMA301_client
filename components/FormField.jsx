@@ -1,4 +1,4 @@
-import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 
@@ -14,7 +14,7 @@ export const FormField = ({
   const [showPassword, setShowPassword] = useState(false);
   return (
     <View className={`space-y-2 ${otherStyles}`}>
-      <Text className={"text-lg font-pmedium"}>{title}</Text>
+      <Text className={"text-lg font-psemibold"}>{title}</Text>
       <View
         className={
           "w-full min-h-16 flex-row items-center border-2 border-black bg-slate-50 rounded-xl px-4"

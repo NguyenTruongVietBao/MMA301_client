@@ -2,7 +2,8 @@
   "expo": {
     "name": "client",
     "slug": "client",
-    "scheme": "your-app-scheme",
+    "scheme": "mmasdn",
+    "platforms": ["ios", "android"],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,13 +18,30 @@
       "supportsTablet": true,
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "bundleIdentifier": "com.mmasdn.app"
     },
     "android": {
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "mmasdn",
+              "host": "checkout",
+              "pathPrefix": "/payment"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": ["android.permission.MODIFY_AUDIO_SETTINGS"],
+      "package": "com.mmasdn.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",
