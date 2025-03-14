@@ -15,7 +15,10 @@ const CategoryList = ({ data }) => {
       {data.length > 0 ? (
         <View className="flex-wrap flex-row justify-between mx-9 gap-10">
           {data.map((category, index) => (
-            <Link href={`/detailCategory/${category._id}`} key={category._id}>
+            <Link
+              href={`/detailCategory/${category._id}?title=${category.title}`}
+              key={category._id}
+            >
               <CategoryCard
                 categoryName={category.title}
                 imageUrl={

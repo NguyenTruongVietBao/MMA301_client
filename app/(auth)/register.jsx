@@ -24,13 +24,15 @@ export default function Register() {
       return;
     }
 
-    // Ensure the email format is valid
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email)) {
       Alert.alert("Error", "Please enter a valid email address.");
       return;
     }
-
+    if (form.password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long.");
+      return;
+    }
     setIsSubmitting(true);
     try {
       const res = await onRegister(
@@ -40,7 +42,7 @@ export default function Register() {
         form.phone
       );
       if (res) {
-        Alert.alert("Register success");
+        Alert.alert("Register success", "Please login to your account");
         router.push("/login");
       }
     } catch (error) {
@@ -55,7 +57,7 @@ export default function Register() {
       <ImageBackground
         source={require("../../assets/images/background-login.jpg")}
         style={{ flex: 1, justifyContent: "center" }}
-        imageStyle={{ resizeMode: "cover" }} // To make sure the image covers the whole screen
+        imageStyle={{ resizeMode: "cover" }}
       >
         <ScrollView>
           <View className="w-full justify-center min-h-[83vh] px-4 mt-16">

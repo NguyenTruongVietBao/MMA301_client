@@ -68,10 +68,10 @@ const MyCourses = () => {
     >
       {/* Header Section */}
       <View className="bg-[#4B6EF5] p-6 pb-8 rounded-3xl m-3">
-        <Text className="text-2xl font-bold text-white mb-2">
+        <Text className="text-2xl font-psemibold text-white mb-2">
           Let's begin learning!
         </Text>
-        <Text className="text-white text-base mb-4">
+        <Text className="text-white text-pbase font-pmedium mb-4">
           Continue your learning journey
         </Text>
 
@@ -97,11 +97,11 @@ const MyCourses = () => {
       <View className="px-4 pt-6">
         <View className="flex-row justify-between items-center mb-4">
           <Text className="text-2xl font-pbold text-gray-800">
-            {searchQuery ? "Kết quả tìm kiếm" : "Khóa học của tôi"}
+            {searchQuery ? "Results" : "My Courses"}
           </Text>
           <Text className="text-gray-500 text-sm font-psemibold">
             {filteredCourses.length}{" "}
-            {filteredCourses.length === 1 ? "khóa học" : "khóa học"}
+            {filteredCourses.length === 1 ? "courses" : "courses"}
           </Text>
         </View>
 

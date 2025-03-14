@@ -64,7 +64,7 @@ const RootLayout = () => {
             <Stack.Screen
               name="detailCategory/[categoryId]"
               options={({ navigation }) => ({
-                title: "Detail Category",
+                title: "",
                 headerStyle: {
                   backgroundColor: "#f1f5f9",
                 },
@@ -75,7 +75,7 @@ const RootLayout = () => {
             <Stack.Screen
               name="detailCourse/[courseId]"
               options={({ navigation }) => ({
-                title: "Detail Course",
+                title: "",
                 headerStyle: {
                   backgroundColor: "#f1f5f9",
                 },

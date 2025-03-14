@@ -6,37 +6,41 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Linking,
   Modal,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import axiosInstance from "../../utils/axiosInstance";
+import { useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
-import { currencyFormat } from "../../utils";
-import PaymentWebView from "./PaymentWebView";
+import WebView from "react-native-webview";
 
 const CheckoutScreen = () => {
+  const router = useRouter();
   const { courseId } = useLocalSearchParams();
   const [course, setCourse] = useState(null);
   const [promotions, setPromotions] = useState([]);
   const [selectedPromotion, setSelectedPromotion] = useState("none");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isPaymentSuccess, setIsPaymentSuccess] = useState(false);
   const [discountedPrice, setDiscountedPrice] = useState(0);
-  const [showWebView, setShowWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState(null);
+  const [showWebView, setShowWebView] = useState(false);
 
   const fetchCourseDetails = async () => {
     try {
       const response = await axiosInstance.get(`/courses/${courseId}`);
       if (response.data) {
-        setCourse(response.data);
+        setCourse(response.data); // Lấy object đầu tiên trong mảng
       } else {
         setError("Không tìm thấy khóa học.");
       }
     } catch (err) {
       setError(`Lỗi khi tải khóa học: ${err.message}`);
+      console.error("Error fetching course details:", err);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Đảm bảo cập nhật isLoading
     }
   };
 
@@ -44,7 +48,6 @@ const CheckoutScreen = () => {
     try {
       const response = await axiosInstance.get("/promotions");
       setPromotions(response.data.data);
-      console.log("fetchPromotions:", response.data.data);
     } catch (err) {
       console.error("Error fetching promotions:", err);
       setError(`Lỗi khi tải khuyến mãi: ${err.message}`);
@@ -77,7 +80,21 @@ const CheckoutScreen = () => {
     setDiscountedPrice(newPrice);
   };
 
+  const handleWebViewNavigationStateChange = (navState) => {
+    // Kiểm tra URL callback từ VNPay
+    if (navState.url.includes("vnp_ResponseCode=00")) {
+      setShowWebView(false);
+      setIsPaymentSuccess(true);
+      router.push("/my-courses"); // Chuyển hướng về trang khóa học sau khi thanh toán thành công
+    } else if (navState.url.includes("vnp_ResponseCode")) {
+      // Xử lý các trường hợp thanh toán thất bại
+      setShowWebView(false);
+      alert("Thanh toán không thành công. Vui lòng thử lại.");
+    }
+  };
+
   useEffect(() => {
+    console.log("courseId:", courseId);
     if (courseId) {
       setIsLoading(true);
       setError(null);
@@ -96,6 +113,10 @@ const CheckoutScreen = () => {
 
     const discount = (price * Number(selectedPromo.rate)) / 100;
     return price - discount;
+  };
+
+  const formatPrice = (price) => {
+    return Number(price || 0).toFixed(2);
   };
 
   useEffect(() => {
@@ -122,82 +143,92 @@ const CheckoutScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Xác nhận Thanh Toán</Text>
-
-      <Image
-        source={{
-          uri: course?.thumbnailUrl || "https://via.placeholder.com/200",
-        }}
-        style={styles.image}
-      />
-
-      <Text style={styles.title}>{course?.title || "Không có tiêu đề"}</Text>
-
-      <View style={styles.priceContainer}>
-        {selectedPromotion !== "none" && (
-          <Text style={styles.originalPrice}>
-            Giá gốc:
-            {currencyFormat.format(course?.price)}
-          </Text>
-        )}
-        <Text style={styles.currentPrice}>
-          {currencyFormat.format(
-            selectedPromotion !== "none" ? discountedPrice : course?.price
-          )}
-        </Text>
-        {selectedPromotion !== "none" && (
-          <Text style={styles.savings}>
-            Tiết kiệm: {currencyFormat.format(course?.price - discountedPrice)}
-          </Text>
-        )}
-      </View>
-
-      <View style={styles.promotionContainer}>
-        <Text style={styles.label}>Chọn mã giảm giá:</Text>
-        <View style={styles.pickerWrapper}>
-          <Picker
-            selectedValue={selectedPromotion}
-            onValueChange={handlePromotionChange}
-            style={styles.picker}
-            dropdownIconColor="#333"
-            mode="dropdown"
+      {showWebView ? (
+        <View style={styles.webviewContainer}>
+          <WebView
+            source={{ uri: paymentUrl }}
+            style={styles.webview}
+            onNavigationStateChange={handleWebViewNavigationStateChange}
+          />
+          <TouchableOpacity
+            style={styles.closeWebViewButton}
+            onPress={() => setShowWebView(false)}
           >
-            <Picker.Item label="Không áp dụng mã giảm giá" value="none" />
-            {promotions &&
-              promotions.length > 0 &&
-              promotions.map((promotion) => (
-                <Picker.Item
-                  key={promotion._id}
-                  label={`${promotion.code} - Giảm ${promotion.rate}%`}
-                  value={promotion._id}
-                />
-              ))}
-          </Picker>
+            <Text style={styles.closeWebViewText}>Đóng</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      ) : (
+        <>
+          <Text style={styles.header}>Xác nhận Thanh Toán</Text>
 
-      <Modal
-        visible={showWebView}
-        animationType="slide"
-        onRequestClose={() => setShowWebView(false)}
-      >
-        <PaymentWebView
-          paymentUrl={paymentUrl}
-          onClose={() => setShowWebView(false)}
-        />
-      </Modal>
+          <Image
+            source={{
+              uri: course?.thumbnailUrl || "https://via.placeholder.com/200",
+            }}
+            style={styles.image}
+          />
 
-      <TouchableOpacity
-        style={styles.checkoutButton}
-        onPress={handleEnrollment}
-      >
-        <Text style={styles.buttonText}>Thanh toán ngay</Text>
-        <Text style={styles.buttonPrice}>
-          {currencyFormat.format(
-            selectedPromotion !== "none" ? discountedPrice : course?.price
-          )}
-        </Text>
-      </TouchableOpacity>
+          <Text style={styles.title}>
+            {course?.title || "Không có tiêu đề"}
+          </Text>
+
+          <View style={styles.priceContainer}>
+            {selectedPromotion !== "none" && (
+              <Text style={styles.originalPrice}>
+                Giá gốc: ${formatPrice(course?.price)}
+              </Text>
+            )}
+            <Text style={styles.currentPrice}>
+              $
+              {formatPrice(
+                selectedPromotion !== "none" ? discountedPrice : course?.price
+              )}
+            </Text>
+            {selectedPromotion !== "none" && (
+              <Text style={styles.savings}>
+                Tiết kiệm: ${formatPrice(course?.price - discountedPrice)}
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.promotionContainer}>
+            <Text style={styles.label}>Chọn mã giảm giá:</Text>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={selectedPromotion}
+                onValueChange={handlePromotionChange}
+                style={styles.picker}
+                dropdownIconColor="#333"
+                mode="dropdown"
+              >
+                <Picker.Item label="Không áp dụng mã giảm giá" value="none" />
+                {promotions &&
+                  promotions.length > 0 &&
+                  promotions.map((promotion) => (
+                    <Picker.Item
+                      key={promotion._id}
+                      label={`${promotion.code} - Giảm ${promotion.rate}%`}
+                      value={promotion._id}
+                    />
+                  ))}
+              </Picker>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.checkoutButton}
+            onPress={handleEnrollment}
+          >
+            <Text style={styles.buttonText}>Thanh toán ngay</Text>
+            <Text style={styles.buttonPrice}>
+              $
+              {formatPrice(
+                selectedPromotion !== "none" ? discountedPrice : course?.price
+              )}
+            </Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 };
@@ -318,6 +349,26 @@ const styles = StyleSheet.create({
   modalText: { fontSize: 18, marginBottom: 20 },
   closeButton: { backgroundColor: "#4B6EF5", padding: 10, borderRadius: 5 },
   closeButtonText: { color: "white", fontSize: 16 },
+  webviewContainer: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  webview: {
+    flex: 1,
+  },
+  closeWebViewButton: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeWebViewText: {
+    color: "white",
+    fontSize: 16,
+  },
 });
 
 export default CheckoutScreen;

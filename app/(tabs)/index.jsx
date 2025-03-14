@@ -49,7 +49,7 @@ export default function HomeScreen() {
       <Header onSearch={handleSearch} />
       <View className="flex-row mx-9 mt-10 justify-between items-end">
         <Text className="text-3xl font-psemibold">Explore Categories</Text>
-        <Text className="text-base text-blue-600 font-pmedium">More</Text>
+        <Text className="text-base text-blue-600 font-psemibold">More</Text>
       </View>
       {isLoading ? (
         <ActivityIndicator

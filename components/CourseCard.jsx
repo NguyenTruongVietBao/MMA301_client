@@ -5,7 +5,7 @@ import { currencyFormat } from "../utils";
 const CourseCard = ({ _id, title, price, thumbnailUrl, onPress }) => {
   return (
     <TouchableOpacity onPress={onPress} className="mx-4">
-      <View className="p-2 bg-white rounded-3xl border-2 border-blue-500">
+      <View className="p-2 bg-white rounded-3xl">
         <Image
           source={
             thumbnailUrl
@@ -24,7 +24,7 @@ const CourseCard = ({ _id, title, price, thumbnailUrl, onPress }) => {
           </View>
           <View className="my-2">
             <Text className="font-pmedium text-slate-400 text-sm">
-              210 Lessons
+              2 Lessons
             </Text>
           </View>
           <View className="flex-row justify-end">

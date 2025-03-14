@@ -28,7 +28,10 @@ export default function Login() {
       if (res?.access_token) {
         router.replace("/");
       } else {
-        Alert.alert("Invalid credentials");
+        Alert.alert(
+          "Invalid credentials",
+          "Please check your login information"
+        );
       }
     } catch (error) {
       Alert.alert("Something went wrong");

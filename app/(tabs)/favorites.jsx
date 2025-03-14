@@ -83,7 +83,7 @@ export default function Favorites() {
       <View className="bg-[#4B6EF5] p-6 pb-8 rounded-3xl m-3">
         <View className="flex-row justify-between items-center">
           <View className="flex-row items-center space-x-2">
-            <Text className="text-2xl font-pbold text-white">
+            <Text className="text-2xl font-psemibold text-white">
               Favorite Courses
             </Text>
             <Ionicons name="heart" size={24} color="white" />
@@ -95,7 +95,7 @@ export default function Favorites() {
           <View className="flex-row items-center bg-white/20 rounded-xl px-4 py-2">
             <Ionicons name="search" size={20} color="white" />
             <TextInput
-              placeholder="Tìm kiếm khóa học..."
+              placeholder="Search"
               placeholderTextColor="rgba(255,255,255,0.7)"
               value={searchQuery}
               onChangeText={setSearchQuery}

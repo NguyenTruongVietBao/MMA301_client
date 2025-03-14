@@ -7,7 +7,7 @@ import SearchInput from "../../components/SearchInput";
 import { useMyCourseContext } from "../../context/MyCourseContext";
 
 export default function Index() {
-  const { categoryId } = useLocalSearchParams();
+  const { categoryId, title } = useLocalSearchParams();
   const router = useRouter();
   const { courses } = useMyCourseContext();
   const [coursesList, setCoursesList] = useState([]);
@@ -49,7 +49,6 @@ export default function Index() {
   }, [categoryId]);
 
   const handleCoursePress = (courseId) => {
-    // Kiểm tra xem khóa học đã được mua chưa
     const isPurchased = courses.some((course) => course._id === courseId);
 
     if (isPurchased) {
@@ -67,7 +66,9 @@ export default function Index() {
 
   return (
     <View className="bg-slate-100 h-full">
-      <Text className="text-3xl font-psemibold m-5 ml-6">Courses</Text>
+      <Text className="text-3xl font-psemibold m-5 ml-6">
+        {title || "Courses"}
+      </Text>
       <View className="mx-5 mb-5">
         <SearchInput
           onSearch={handleSearch}

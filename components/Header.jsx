@@ -26,10 +26,12 @@ export default function Header({ onSearch }) {
     <View className="bg-[#4B6EF5] p-6 rounded-3xl m-3">
       <View className="flex-row justify-between items-center mb-5">
         <View>
-          <Text className="text-2xl font-bold text-white">
+          <Text className="text-2xl font-pbold text-white">
             Hello, {authState.user.email}
           </Text>
-          <Text className="text-base text-white mt-1">Welcome</Text>
+          <Text className="text-base font-pmedium text-white mt-1">
+            Welcome
+          </Text>
         </View>
         <TouchableOpacity className="relative bg-white/20 rounded-full p-2">
           <Ionicons name="notifications-outline" size={24} color="#fff" />
